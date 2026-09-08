@@ -3,10 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# PyInstaller
+# PyInstaller & Installers
 build/
 dist/
 *.spec
+installer_output/
+SecureLock_Setup.exe
+SecureLock.exe
 
 # Temporary test files
 slock_tmp_*

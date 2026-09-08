@@ -1,0 +1,23 @@
+﻿SECURELOCK END USER LICENSE AGREEMENT & TERMS OF USE
+Version 3.0 (English Edition)
+Copyright (c) 2026 Lutfor Rahman / ICTBD Solutions. All rights reserved.
+
+PLEASE READ THE FOLLOWING TERMS AND CONDITIONS CAREFULLY BEFORE INSTALLING OR USING SECURELOCK:
+
+1. GRANT OF LICENSE:
+SecureLock is provided as free security software for personal, academic, and commercial use. You are granted a non-exclusive, worldwide license to install, configure, and execute SecureLock on any compatible Windows computer.
+
+2. ENCRYPTION & USER RESPONSIBILITY:
+SecureLock utilizes military-grade AES-256-GCM authenticated envelope encryption and Windows filesystem protections. You are solely responsible for:
+  a. Remembering or securely storing your Master Passwords.
+  b. Retaining your 16-character Emergency Recovery Keys (SLOCK-XXXX-XXXX-XXXX-XXXX) in a safe offline location.
+  c. Configuring your personal Recovery Email address correctly if you intend to use Email OTP password resets.
+
+3. DISCLAIMER OF WARRANTIES:
+SECURELOCK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR FREEDOM FROM SYSTEM CONFLICTS.
+
+4. LIMITATION OF LIABILITY:
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES, INCLUDING LOSS OF DATA DUE TO FORGOTTEN PASSWORDS OR HARD DRIVE FAILURE.
+
+5. USER CONSENT:
+By selecting "I accept the agreement" and continuing with the setup, you confirm that you have read and agreed to these terms.
