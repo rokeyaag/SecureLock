@@ -562,6 +562,66 @@ class ResetPasswordDialog(tk.Toplevel):
             messagebox.showerror("Error", f"Password reset failed: {e}", parent=self)
 
 
+def install_system_shortcuts() -> tuple[bool, str]:
+    """Installs SecureLock to Local AppData and creates Desktop and Start Menu shortcuts."""
+    try:
+        local_appdata = os.environ.get("LOCALAPPDATA", os.path.expanduser("~\\AppData\\Local"))
+        install_dir = os.path.join(local_appdata, "Programs", "SecureLock")
+        os.makedirs(install_dir, exist_ok=True)
+        exe_target = os.path.join(install_dir, "SecureLock.exe")
+
+        is_frozen = getattr(sys, "frozen", False)
+        current_exe = sys.executable if is_frozen else os.path.abspath(sys.argv[0])
+
+        if is_frozen:
+            if os.path.abspath(current_exe).lower() != os.path.abspath(exe_target).lower():
+                try:
+                    import shutil
+                    shutil.copy2(current_exe, exe_target)
+                    target_to_link = exe_target
+                    work_dir = install_dir
+                except Exception:
+                    target_to_link = current_exe
+                    work_dir = os.path.dirname(current_exe)
+            else:
+                target_to_link = exe_target
+                work_dir = install_dir
+        else:
+            target_to_link = sys.executable
+            work_dir = os.path.dirname(os.path.abspath(__file__))
+
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        desktop_shortcut = os.path.join(desktop, "SecureLock.lnk")
+
+        roaming_appdata = os.environ.get("APPDATA", os.path.expanduser("~\\AppData\\Roaming"))
+        start_menu = os.path.join(roaming_appdata, "Microsoft", "Windows", "Start Menu", "Programs")
+        start_shortcut = os.path.join(start_menu, "SecureLock.lnk")
+
+        args = "" if is_frozen else f'"{os.path.abspath(os.path.join(work_dir, "..", "main.py"))}"'
+
+        ps_script = f"""
+        $ws = New-Object -ComObject WScript.Shell
+        $s1 = $ws.CreateShortcut('{desktop_shortcut}')
+        $s1.TargetPath = '{target_to_link}'
+        $s1.Arguments = '{args}'
+        $s1.WorkingDirectory = '{work_dir}'
+        $s1.Description = 'SecureLock - Windows Folder Locker & Vault'
+        $s1.Save()
+
+        $s2 = $ws.CreateShortcut('{start_shortcut}')
+        $s2.TargetPath = '{target_to_link}'
+        $s2.Arguments = '{args}'
+        $s2.WorkingDirectory = '{work_dir}'
+        $s2.Description = 'SecureLock - Windows Folder Locker & Vault'
+        $s2.Save()
+        """
+        creation_flag = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW
+        subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], check=True, creationflags=creation_flag)
+        return True, target_to_link
+    except Exception as e:
+        return False, str(e)
+
+
 class SecureLockApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -576,6 +636,22 @@ class SecureLockApp(tk.Tk):
         self._build_status_bar()
 
         self.refresh_vaults_list()
+        self.after(1000, self._check_first_run_shortcut)
+
+    def _check_first_run_shortcut(self):
+        try:
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+            shortcut_path = os.path.join(desktop, "SecureLock.lnk")
+            if not os.path.exists(shortcut_path):
+                ans = messagebox.askyesno(
+                    "SecureLock Setup",
+                    "Welcome to SecureLock!\n\nWould you like to install SecureLock shortcuts on your Desktop and Start Menu for quick access?",
+                    parent=self,
+                )
+                if ans:
+                    self._install_desktop_shortcuts()
+        except Exception:
+            pass
 
     def _setup_styles(self):
         style = ttk.Style(self)
@@ -653,9 +729,29 @@ class SecureLockApp(tk.Tk):
         )
         subtitle_label.pack(anchor="w", pady=(2, 0))
 
-        # Email Settings Button on Top Right
+        # Right Action Buttons
+        right_actions = tk.Frame(header_frame, bg=BG_DARK)
+        right_actions.pack(side=tk.RIGHT, pady=5)
+
+        btn_install_shortcuts = tk.Button(
+            right_actions,
+            text="📌 Setup PC Shortcut",
+            command=self._install_desktop_shortcuts,
+            bg=BG_INPUT,
+            fg=TEXT_WHITE,
+            activebackground=BORDER_COLOR,
+            activeforeground=TEXT_WHITE,
+            font=("Segoe UI Semibold", 9),
+            relief=tk.FLAT,
+            padx=12,
+            pady=6,
+            cursor="hand2",
+            bd=1,
+        )
+        btn_install_shortcuts.pack(side=tk.LEFT, padx=(0, 8))
+
         btn_email_settings = tk.Button(
-            header_frame,
+            right_actions,
             text="⚙️ Email Settings",
             command=self._open_email_settings,
             bg=BG_INPUT,
@@ -669,7 +765,19 @@ class SecureLockApp(tk.Tk):
             cursor="hand2",
             bd=1,
         )
-        btn_email_settings.pack(side=tk.RIGHT, pady=5)
+        btn_email_settings.pack(side=tk.LEFT)
+
+    def _install_desktop_shortcuts(self):
+        success, msg = install_system_shortcuts()
+        if success:
+            messagebox.showinfo(
+                "Setup Completed",
+                f"SecureLock was successfully set up on this PC!\n\n"
+                f"Desktop and Start Menu shortcuts have been created.\nProgram: {msg}",
+                parent=self,
+            )
+        else:
+            messagebox.showerror("Setup Error", f"Could not create shortcuts: {msg}", parent=self)
 
     def _open_email_settings(self):
         EmailSettingsDialog(self)
