@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Temporary test files
+slock_tmp_*
+slock_out_*
+slock_dec_*
+
+# Registry data / local configs
+email_config.json
+registry.json
+.slock_meta.json
