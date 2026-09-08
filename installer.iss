@@ -1,4 +1,4 @@
-﻿; SecureLock Inno Setup Script
+; SecureLock Inno Setup Script
 ; Generates a professional Windows Setup Wizard (.exe) with License, Drive/Folder Selection, Shortcuts, and Uninstaller.
 
 #define MyAppName "SecureLock"
@@ -22,12 +22,13 @@ AllowNoIcons=yes
 LicenseFile=LICENSE.txt
 OutputDir=installer_output
 OutputBaseFilename=SecureLock_Setup_v3.0
+SetupIconFile=assets\icon.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequiredOverridesAllowed=dialog commandline
 ArchitecturesInstallIn64BitMode=x64compatible
-UninstallDisplayIcon={app}\{#MyAppExeName}
+UninstallDisplayIcon={app}\assets\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -38,14 +39,15 @@ Name: "startmenuicon"; Description: "Create a Start Menu shortcut"; GroupDescrip
 
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: startmenuicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\assets\icon.ico"; Tasks: startmenuicon
 Name: "{group}\Documentation"; Filename: "{app}\README.md"; Tasks: startmenuicon
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"; Tasks: startmenuicon
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\assets\icon.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

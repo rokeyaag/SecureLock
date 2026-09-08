@@ -5,19 +5,31 @@ import tkinter as tk
 from tkinter import ttk
 import re
 
-# Theme Colors
-BG_DARK = "#181825"
-BG_CARD = "#1e1e2e"
-BG_INPUT = "#252538"
-BORDER_COLOR = "#363654"
-PRIMARY_COLOR = "#3d7bf0"
-PRIMARY_HOVER = "#2b63cb"
-SUCCESS_COLOR = "#22c55e"
-DANGER_COLOR = "#ef4444"
-WARNING_COLOR = "#f59e0b"
-TEXT_WHITE = "#f8fafc"
-TEXT_MUTED = "#94a3b8"
-TEXT_SUBTLE = "#64748b"
+# Theme Colors - Vibrant Red, Golden Yellow, Crisp White & Black Text Palette
+BG_DARK = "#F8FAFC"          # Light clean modern canvas background
+BG_CARD = "#FFFFFF"          # Pure White card containers
+BG_INPUT = "#FFFFFF"         # Crisp White input fields
+BORDER_COLOR = "#D1D5DB"     # Clean subtle border
+BORDER_YELLOW = "#FDE68A"    # Warm golden yellow border
+BORDER_RED = "#FCA5A5"       # Subtle red border
+
+# Primary & Secondary Accents
+PRIMARY_COLOR = "#DC2626"    # Vibrant Crimson Red
+PRIMARY_HOVER = "#B91C1C"    # Deep Red (hover)
+ACCENT_YELLOW = "#F59E0B"    # Golden Amber
+YELLOW_LIGHT = "#FFFBEB"     # Soft Yellow Card & Alert background
+YELLOW_BTN = "#FBBF24"       # Vibrant Gold Yellow for Action Buttons
+YELLOW_BTN_HOVER = "#F59E0B" # Yellow hover
+SUCCESS_COLOR = "#16A34A"    # Vibrant Green (for status)
+DANGER_COLOR = "#DC2626"     # Danger Red
+WARNING_COLOR = "#D97706"    # Warm Yellow/Amber
+
+# Typography Colors
+TEXT_BLACK = "#111827"       # Solid Black primary text
+TEXT_DARK = "#1F2937"        # Dark slate text
+TEXT_MUTED = "#4B5563"       # Charcoal for secondary descriptions
+TEXT_SUBTLE = "#6B7280"      # Subtle gray
+TEXT_WHITE = "#FFFFFF"       # Crisp White text (for Red surfaces)
 
 
 def evaluate_password_strength(password: str) -> tuple[int, str, str]:
@@ -52,15 +64,20 @@ class PasswordEntry(tk.Frame):
         super().__init__(parent, bg=BG_CARD, **kwargs)
         self.show_password = False
 
-        self.entry_frame = tk.Frame(self, bg=BG_INPUT, highlightbackground=BORDER_COLOR, highlightthickness=1)
+        self.entry_frame = tk.Frame(
+            self,
+            bg=BG_INPUT,
+            highlightbackground=BORDER_COLOR,
+            highlightthickness=1,
+        )
         self.entry_frame.pack(fill=tk.X, expand=True)
 
         self.entry = tk.Entry(
             self.entry_frame,
             show="●",
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
         )
@@ -73,7 +90,7 @@ class PasswordEntry(tk.Frame):
             bg=BG_INPUT,
             fg=TEXT_MUTED,
             activebackground=BG_INPUT,
-            activeforeground=TEXT_WHITE,
+            activeforeground=PRIMARY_COLOR,
             relief=tk.FLAT,
             bd=0,
             cursor="hand2",

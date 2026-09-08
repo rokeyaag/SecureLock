@@ -51,11 +51,19 @@ from gui.components import (
     BG_CARD,
     BG_INPUT,
     BORDER_COLOR,
+    BORDER_YELLOW,
+    BORDER_RED,
     PRIMARY_COLOR,
     PRIMARY_HOVER,
+    ACCENT_YELLOW,
+    YELLOW_LIGHT,
+    YELLOW_BTN,
+    YELLOW_BTN_HOVER,
     SUCCESS_COLOR,
     DANGER_COLOR,
     WARNING_COLOR,
+    TEXT_BLACK,
+    TEXT_DARK,
     TEXT_WHITE,
     TEXT_MUTED,
     TEXT_SUBTLE,
@@ -93,7 +101,7 @@ class EmailSettingsDialog(tk.Toplevel):
             pad,
             text="⚙️ Email OTP Sender Settings",
             font=("Segoe UI Bold", 13),
-            fg=TEXT_WHITE,
+            fg=PRIMARY_COLOR,
             bg=BG_CARD,
         ).pack(anchor="w")
 
@@ -108,13 +116,13 @@ class EmailSettingsDialog(tk.Toplevel):
         cfg = get_email_config()
 
         # Sender Email
-        tk.Label(pad, text="Sender Email (Gmail / Outlook / SMTP):", font=("Segoe UI Semibold", 9), fg=TEXT_WHITE, bg=BG_CARD).pack(anchor="w")
-        self.entry_sender = tk.Entry(pad, bg=BG_INPUT, fg=TEXT_WHITE, insertbackground=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 10), highlightbackground=BORDER_COLOR, highlightthickness=1)
+        tk.Label(pad, text="Sender Email (Gmail / Outlook / SMTP):", font=("Segoe UI Semibold", 9), fg=TEXT_BLACK, bg=BG_CARD).pack(anchor="w")
+        self.entry_sender = tk.Entry(pad, bg=BG_INPUT, fg=TEXT_BLACK, insertbackground=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 10), highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.entry_sender.pack(fill=tk.X, ipady=5, pady=(3, 10))
         self.entry_sender.insert(0, cfg.get("sender_email", ""))
 
         # App Password
-        tk.Label(pad, text="App Password (16-character code):", font=("Segoe UI Semibold", 9), fg=TEXT_WHITE, bg=BG_CARD).pack(anchor="w")
+        tk.Label(pad, text="App Password (16-character code):", font=("Segoe UI Semibold", 9), fg=TEXT_BLACK, bg=BG_CARD).pack(anchor="w")
         self.entry_pwd = PasswordEntry(pad)
         self.entry_pwd.pack(fill=tk.X, pady=(3, 10))
         self.entry_pwd.set(cfg.get("sender_password", ""))
@@ -126,22 +134,22 @@ class EmailSettingsDialog(tk.Toplevel):
         col1 = tk.Frame(row, bg=BG_CARD)
         col1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
         tk.Label(col1, text="SMTP Server:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
-        self.entry_server = tk.Entry(col1, bg=BG_INPUT, fg=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
+        self.entry_server = tk.Entry(col1, bg=BG_INPUT, fg=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.entry_server.pack(fill=tk.X, ipady=4, pady=(2, 0))
         self.entry_server.insert(0, cfg.get("smtp_server", "smtp.gmail.com"))
 
         col2 = tk.Frame(row, bg=BG_CARD)
         col2.pack(side=tk.LEFT, fill=tk.X, expand=False, padx=(8, 0))
         tk.Label(col2, text="Port:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
-        self.entry_port = tk.Entry(col2, bg=BG_INPUT, fg=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 9), width=8, highlightbackground=BORDER_COLOR, highlightthickness=1)
+        self.entry_port = tk.Entry(col2, bg=BG_INPUT, fg=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 9), width=8, highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.entry_port.pack(fill=tk.X, ipady=4, pady=(2, 0))
         self.entry_port.insert(0, str(cfg.get("smtp_port", 587)))
 
         # Help Tip Box
-        tip_box = tk.Frame(pad, bg=BG_INPUT, highlightbackground=BORDER_COLOR, highlightthickness=1, padx=10, pady=8)
+        tip_box = tk.Frame(pad, bg=YELLOW_LIGHT, highlightbackground=BORDER_YELLOW, highlightthickness=1, padx=10, pady=8)
         tip_box.pack(fill=tk.X, pady=(0, 15))
         tip_text = "💡 Gmail Setup: Enable 2-Step Verification in your Google Account > Security, generate an 'App Password', and paste that 16-character code here."
-        tk.Label(tip_box, text=tip_text, font=("Segoe UI", 8), fg=WARNING_COLOR, bg=BG_INPUT, justify=tk.LEFT, wraplength=440).pack(anchor="w")
+        tk.Label(tip_box, text=tip_text, font=("Segoe UI", 8), fg=WARNING_COLOR, bg=YELLOW_LIGHT, justify=tk.LEFT, wraplength=440).pack(anchor="w")
 
         # Action Buttons
         btn_box = tk.Frame(pad, bg=BG_CARD)
@@ -151,16 +159,16 @@ class EmailSettingsDialog(tk.Toplevel):
             btn_box,
             text="🧪 Test Connection",
             command=self._test_connection,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         self.btn_test.pack(side=tk.LEFT)
 
@@ -291,15 +299,15 @@ class ResetPasswordDialog(tk.Toplevel):
             pad_frame,
             text="🔑 Password Recovery & Reset",
             font=("Segoe UI Bold", 13),
-            fg=TEXT_WHITE,
+            fg=PRIMARY_COLOR,
             bg=BG_CARD,
         ).pack(anchor="w")
 
         tk.Label(
             pad_frame,
             text=f"Target: {self.folder_name}",
-            font=("Segoe UI", 9),
-            fg=PRIMARY_COLOR,
+            font=("Segoe UI Semibold", 9),
+            fg=TEXT_DARK,
             bg=BG_CARD,
         ).pack(anchor="w", pady=(2, 10))
 
@@ -308,12 +316,12 @@ class ResetPasswordDialog(tk.Toplevel):
             pad_frame,
             text=" 📧 Method 1: Email OTP Verification (Recommended) ",
             font=("Segoe UI Semibold", 9),
-            bg=BG_INPUT,
-            fg=SUCCESS_COLOR,
+            bg=YELLOW_LIGHT,
+            fg=WARNING_COLOR,
             padx=12,
             pady=10,
             relief=tk.FLAT,
-            highlightbackground=BORDER_COLOR,
+            highlightbackground=BORDER_YELLOW,
             highlightthickness=1,
         )
         otp_card.pack(fill=tk.X, pady=(0, 10))
@@ -324,8 +332,8 @@ class ResetPasswordDialog(tk.Toplevel):
                 otp_card,
                 text=f"Registered Recovery Email: {masked}",
                 font=("Segoe UI Semibold", 9),
-                fg=TEXT_WHITE,
-                bg=BG_INPUT,
+                fg=TEXT_BLACK,
+                bg=YELLOW_LIGHT,
             ).pack(anchor="w")
         else:
             tk.Label(
@@ -333,13 +341,13 @@ class ResetPasswordDialog(tk.Toplevel):
                 text="No recovery email was attached. Enter destination email below:",
                 font=("Segoe UI", 8),
                 fg=TEXT_MUTED,
-                bg=BG_INPUT,
+                bg=YELLOW_LIGHT,
             ).pack(anchor="w")
-            self.entry_adhoc_email = tk.Entry(otp_card, bg=BG_CARD, fg=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
+            self.entry_adhoc_email = tk.Entry(otp_card, bg=BG_CARD, fg=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
             self.entry_adhoc_email.pack(fill=tk.X, ipady=3, pady=(2, 6))
 
         # Send OTP row
-        send_row = tk.Frame(otp_card, bg=BG_INPUT, pady=4)
+        send_row = tk.Frame(otp_card, bg=YELLOW_LIGHT, pady=4)
         send_row.pack(fill=tk.X)
 
         self.btn_send_otp = tk.Button(
@@ -350,7 +358,7 @@ class ResetPasswordDialog(tk.Toplevel):
             fg=TEXT_WHITE,
             activebackground=PRIMARY_HOVER,
             activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=5,
@@ -359,18 +367,18 @@ class ResetPasswordDialog(tk.Toplevel):
         )
         self.btn_send_otp.pack(side=tk.LEFT)
 
-        self.lbl_otp_sent_info = tk.Label(send_row, text="", font=("Segoe UI", 8), fg=WARNING_COLOR, bg=BG_INPUT)
+        self.lbl_otp_sent_info = tk.Label(send_row, text="", font=("Segoe UI Bold", 8), fg=WARNING_COLOR, bg=YELLOW_LIGHT)
         self.lbl_otp_sent_info.pack(side=tk.LEFT, padx=10)
 
         # OTP input row
-        otp_in_row = tk.Frame(otp_card, bg=BG_INPUT, pady=4)
+        otp_in_row = tk.Frame(otp_card, bg=YELLOW_LIGHT, pady=4)
         otp_in_row.pack(fill=tk.X)
-        tk.Label(otp_in_row, text="Enter OTP Code:", font=("Segoe UI", 9), fg=TEXT_WHITE, bg=BG_INPUT).pack(side=tk.LEFT)
+        tk.Label(otp_in_row, text="Enter OTP Code:", font=("Segoe UI Semibold", 9), fg=TEXT_BLACK, bg=YELLOW_LIGHT).pack(side=tk.LEFT)
         self.entry_otp_code = tk.Entry(
             otp_in_row,
             bg=BG_CARD,
-            fg=SUCCESS_COLOR,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Consolas Bold", 13),
             width=10,
@@ -394,8 +402,8 @@ class ResetPasswordDialog(tk.Toplevel):
         self.entry_recovery_fallback = tk.Entry(
             fallback_frame,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 9),
             highlightbackground=BORDER_COLOR,
@@ -408,7 +416,7 @@ class ResetPasswordDialog(tk.Toplevel):
             pad_frame,
             text="Enter New Password:",
             font=("Segoe UI Semibold", 9),
-            fg=TEXT_WHITE,
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         ).pack(anchor="w")
 
@@ -419,7 +427,7 @@ class ResetPasswordDialog(tk.Toplevel):
             pad_frame,
             text="Confirm New Password:",
             font=("Segoe UI Semibold", 9),
-            fg=TEXT_WHITE,
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         ).pack(anchor="w")
 
@@ -434,10 +442,10 @@ class ResetPasswordDialog(tk.Toplevel):
             btn_box,
             text="✅ Verify OTP & Reset Password",
             command=self._do_verify_and_reset,
-            bg=SUCCESS_COLOR,
-            fg=TEXT_WHITE,
-            activebackground="#16a34a",
-            activeforeground=TEXT_WHITE,
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI Bold", 10),
             relief=tk.FLAT,
             pady=8,
@@ -450,15 +458,15 @@ class ResetPasswordDialog(tk.Toplevel):
             btn_box,
             text="Cancel",
             command=self.destroy,
-            bg=BG_INPUT,
+            bg=BG_CARD,
             fg=TEXT_MUTED,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI", 9),
             relief=tk.FLAT,
             pady=4,
             cursor="hand2",
-            bd=0,
+            bd=1,
         )
         btn_cancel.pack(fill=tk.X)
 
@@ -590,6 +598,22 @@ def install_system_shortcuts() -> tuple[bool, str]:
             target_to_link = sys.executable
             work_dir = os.path.dirname(os.path.abspath(__file__))
 
+        # Copy icon to install directory if available
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        icon_source = os.path.join(base_dir, "assets", "icon.ico")
+        icon_target = os.path.join(install_dir, "icon.ico")
+        if os.path.exists(icon_source):
+            try:
+                import shutil
+                shutil.copy2(icon_source, icon_target)
+                icon_path_for_link = icon_target
+            except Exception:
+                icon_path_for_link = icon_source
+        elif os.path.exists(icon_target):
+            icon_path_for_link = icon_target
+        else:
+            icon_path_for_link = target_to_link
+
         desktop = os.path.join(os.path.expanduser("~"), "Desktop")
         desktop_shortcut = os.path.join(desktop, "SecureLock.lnk")
 
@@ -605,6 +629,7 @@ def install_system_shortcuts() -> tuple[bool, str]:
         $s1.TargetPath = '{target_to_link}'
         $s1.Arguments = '{args}'
         $s1.WorkingDirectory = '{work_dir}'
+        $s1.IconLocation = '{icon_path_for_link}'
         $s1.Description = 'SecureLock - Windows Folder Locker & Vault'
         $s1.Save()
 
@@ -612,6 +637,7 @@ def install_system_shortcuts() -> tuple[bool, str]:
         $s2.TargetPath = '{target_to_link}'
         $s2.Arguments = '{args}'
         $s2.WorkingDirectory = '{work_dir}'
+        $s2.IconLocation = '{icon_path_for_link}'
         $s2.Description = 'SecureLock - Windows Folder Locker & Vault'
         $s2.Save()
         """
@@ -630,6 +656,7 @@ class SecureLockApp(tk.Tk):
         self.minsize(760, 680)
         self.configure(bg=BG_DARK)
 
+        self._load_app_icon()
         self._setup_styles()
         self._build_header()
         self._build_tabs()
@@ -637,6 +664,22 @@ class SecureLockApp(tk.Tk):
 
         self.refresh_vaults_list()
         self.after(1000, self._check_first_run_shortcut)
+
+    def _load_app_icon(self):
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        ico_path = os.path.join(base_dir, "assets", "icon.ico")
+        if os.path.exists(ico_path):
+            try:
+                self.iconbitmap(ico_path)
+            except Exception:
+                pass
+        png_path = os.path.join(base_dir, "assets", "icon_48.png")
+        if os.path.exists(png_path):
+            try:
+                self._app_icon_photo = tk.PhotoImage(file=png_path)
+                self.iconphoto(True, self._app_icon_photo)
+            except Exception:
+                pass
 
     def _check_first_run_shortcut(self):
         try:
@@ -661,25 +704,25 @@ class SecureLockApp(tk.Tk):
             "TNotebook",
             background=BG_DARK,
             borderwidth=0,
-            tabmargins=[15, 5, 15, 0],
+            tabmargins=[15, 6, 15, 0],
         )
         style.configure(
             "TNotebook.Tab",
-            background=BG_CARD,
-            foreground=TEXT_MUTED,
-            font=("Segoe UI Semibold", 10),
-            padding=[18, 9],
+            background="#E2E8F0",
+            foreground=TEXT_BLACK,
+            font=("Segoe UI Bold", 10),
+            padding=[20, 10],
             borderwidth=0,
         )
         style.map(
             "TNotebook.Tab",
-            background=[("selected", PRIMARY_COLOR), ("active", BG_INPUT)],
-            foreground=[("selected", TEXT_WHITE), ("active", TEXT_WHITE)],
+            background=[("selected", PRIMARY_COLOR), ("active", "#FDE68A")],
+            foreground=[("selected", TEXT_WHITE), ("active", TEXT_BLACK)],
         )
 
         style.configure(
             "Horizontal.TProgressbar",
-            troughcolor=BG_INPUT,
+            troughcolor="#E2E8F0",
             background=PRIMARY_COLOR,
             thickness=8,
             borderwidth=0,
@@ -687,66 +730,81 @@ class SecureLockApp(tk.Tk):
 
         style.configure(
             "Treeview",
-            background=BG_CARD,
-            foreground=TEXT_WHITE,
-            fieldbackground=BG_CARD,
-            borderwidth=0,
+            background="#FFFFFF",
+            foreground=TEXT_BLACK,
+            fieldbackground="#FFFFFF",
+            borderwidth=1,
             rowheight=32,
             font=("Segoe UI", 9),
         )
         style.configure(
             "Treeview.Heading",
-            background=BG_INPUT,
-            foreground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
-            borderwidth=0,
+            background="#FEF3C7",
+            foreground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
+            borderwidth=1,
             relief=tk.FLAT,
         )
         style.map("Treeview", background=[("selected", PRIMARY_COLOR)], foreground=[("selected", TEXT_WHITE)])
 
     def _build_header(self):
-        header_frame = tk.Frame(self, bg=BG_DARK, pady=10, padx=25)
+        header_frame = tk.Frame(self, bg=PRIMARY_COLOR, pady=12, padx=22)
         header_frame.pack(fill=tk.X)
 
-        left_header = tk.Frame(header_frame, bg=BG_DARK)
+        left_header = tk.Frame(header_frame, bg=PRIMARY_COLOR)
         left_header.pack(side=tk.LEFT)
 
+        # Show 48x48 brand logo if available
+        self._logo_photo = None
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        logo_path = os.path.join(base_dir, "assets", "icon_48.png")
+        if os.path.exists(logo_path):
+            try:
+                self._logo_photo = tk.PhotoImage(file=logo_path)
+                lbl_logo = tk.Label(left_header, image=self._logo_photo, bg=PRIMARY_COLOR)
+                lbl_logo.pack(side=tk.LEFT, padx=(0, 12))
+            except Exception:
+                pass
+
+        titles_box = tk.Frame(left_header, bg=PRIMARY_COLOR)
+        titles_box.pack(side=tk.LEFT)
+
         title_label = tk.Label(
-            left_header,
-            text="🔒 SecureLock",
-            font=("Segoe UI Black", 20),
+            titles_box,
+            text="SecureLock",
+            font=("Segoe UI Black", 18),
             fg=TEXT_WHITE,
-            bg=BG_DARK,
+            bg=PRIMARY_COLOR,
         )
         title_label.pack(anchor="w")
 
         subtitle_label = tk.Label(
-            left_header,
-            text="Advanced Windows Folder Locker & Vault (AES-256 Envelope Encryption & Email OTP Recovery)",
-            font=("Segoe UI", 10),
-            fg=TEXT_MUTED,
-            bg=BG_DARK,
+            titles_box,
+            text="Advanced Folder Locker • AES-256 Envelope Encryption • Email OTP Recovery",
+            font=("Segoe UI Semibold", 9),
+            fg="#FEF08A",
+            bg=PRIMARY_COLOR,
         )
-        subtitle_label.pack(anchor="w", pady=(2, 0))
+        subtitle_label.pack(anchor="w", pady=(1, 0))
 
         # Right Action Buttons
-        right_actions = tk.Frame(header_frame, bg=BG_DARK)
-        right_actions.pack(side=tk.RIGHT, pady=5)
+        right_actions = tk.Frame(header_frame, bg=PRIMARY_COLOR)
+        right_actions.pack(side=tk.RIGHT, pady=4)
 
         btn_install_shortcuts = tk.Button(
             right_actions,
             text="📌 Setup PC Shortcut",
             command=self._install_desktop_shortcuts,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         btn_install_shortcuts.pack(side=tk.LEFT, padx=(0, 8))
 
@@ -754,16 +812,16 @@ class SecureLockApp(tk.Tk):
             right_actions,
             text="⚙️ Email Settings",
             command=self._open_email_settings,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         btn_email_settings.pack(side=tk.LEFT)
 
@@ -784,7 +842,7 @@ class SecureLockApp(tk.Tk):
 
     def _build_tabs(self):
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=(5, 10))
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=(8, 10))
 
         self.tab_lock = tk.Frame(self.notebook, bg=BG_CARD, padx=25, pady=15)
         self.notebook.add(self.tab_lock, text=" 🔒 Lock Folder ")
@@ -810,8 +868,8 @@ class SecureLockApp(tk.Tk):
         lbl_step1 = tk.Label(
             self.tab_lock,
             text="1. Select Folder to Lock:",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step1.pack(anchor="w")
@@ -824,8 +882,8 @@ class SecureLockApp(tk.Tk):
             folder_box,
             textvariable=self.lock_folder_path_var,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
             highlightbackground=BORDER_COLOR,
@@ -837,11 +895,11 @@ class SecureLockApp(tk.Tk):
             folder_box,
             text="📁 Browse Folder...",
             command=self._browse_folder_to_lock,
-            bg=PRIMARY_COLOR,
-            fg=TEXT_WHITE,
-            activebackground=PRIMARY_HOVER,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=14,
             pady=5,
@@ -854,14 +912,14 @@ class SecureLockApp(tk.Tk):
         lbl_step2 = tk.Label(
             self.tab_lock,
             text="2. Security Mode:",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step2.pack(anchor="w", pady=(6, 2))
 
         self.lock_mode_var = tk.StringVar(value="aes256")
-        mode_box = tk.Frame(self.tab_lock, bg=BG_INPUT, highlightbackground=BORDER_COLOR, highlightthickness=1, padx=10, pady=5)
+        mode_box = tk.Frame(self.tab_lock, bg=YELLOW_LIGHT, highlightbackground=BORDER_YELLOW, highlightthickness=1, padx=10, pady=5)
         mode_box.pack(fill=tk.X, pady=(0, 6))
 
         rb_aes = tk.Radiobutton(
@@ -869,11 +927,11 @@ class SecureLockApp(tk.Tk):
             text="🛡️ AES-256 Envelope Encryption (Recommended - Military Grade)",
             variable=self.lock_mode_var,
             value="aes256",
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BG_INPUT,
-            activeforeground=TEXT_WHITE,
-            selectcolor=BG_DARK,
+            bg=YELLOW_LIGHT,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_LIGHT,
+            activeforeground=TEXT_BLACK,
+            selectcolor="#FFFFFF",
             font=("Segoe UI Semibold", 9),
         )
         rb_aes.pack(anchor="w")
@@ -883,11 +941,11 @@ class SecureLockApp(tk.Tk):
             text="⚡ Instant Quick Lock (Fast Lock for Large Files/Games)",
             variable=self.lock_mode_var,
             value="quick_lock",
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BG_INPUT,
-            activeforeground=TEXT_WHITE,
-            selectcolor=BG_DARK,
+            bg=YELLOW_LIGHT,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_LIGHT,
+            activeforeground=TEXT_BLACK,
+            selectcolor="#FFFFFF",
             font=("Segoe UI Semibold", 9),
         )
         rb_quick.pack(anchor="w", pady=(2, 0))
@@ -896,8 +954,8 @@ class SecureLockApp(tk.Tk):
         lbl_step3 = tk.Label(
             self.tab_lock,
             text="3. Set Password:",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step3.pack(anchor="w")
@@ -926,42 +984,42 @@ class SecureLockApp(tk.Tk):
             self.tab_lock,
             text=" 📧 Emergency Recovery & Email OTP Options ",
             font=("Segoe UI Semibold", 9),
-            bg=BG_INPUT,
+            bg=YELLOW_LIGHT,
             fg=WARNING_COLOR,
             padx=12,
             pady=8,
             relief=tk.FLAT,
-            highlightbackground=BORDER_COLOR,
+            highlightbackground=BORDER_YELLOW,
             highlightthickness=1,
         )
         rec_card.pack(fill=tk.X, pady=(0, 8))
 
         # Recovery Email Input
-        tk.Label(rec_card, text="Recovery Email (OTP will be sent here if password is forgotten):", font=("Segoe UI Semibold", 8), fg=TEXT_WHITE, bg=BG_INPUT).pack(anchor="w")
+        tk.Label(rec_card, text="Recovery Email (OTP will be sent here if password is forgotten):", font=("Segoe UI Semibold", 8), fg=TEXT_BLACK, bg=YELLOW_LIGHT).pack(anchor="w")
         self.entry_recovery_email = tk.Entry(
             rec_card,
-            bg=BG_CARD,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 9),
-            highlightbackground=BORDER_COLOR,
+            highlightbackground=BORDER_YELLOW,
             highlightthickness=1,
         )
         self.entry_recovery_email.pack(fill=tk.X, ipady=4, pady=(2, 6))
 
         # Auto Recovery Key
         self.current_rec_key = generate_recovery_key()
-        rec_key_row = tk.Frame(rec_card, bg=BG_INPUT)
+        rec_key_row = tk.Frame(rec_card, bg=YELLOW_LIGHT)
         rec_key_row.pack(fill=tk.X)
 
-        tk.Label(rec_key_row, text="Backup Recovery Key:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_INPUT).pack(side=tk.LEFT)
+        tk.Label(rec_key_row, text="Backup Recovery Key:", font=("Segoe UI", 8), fg=TEXT_DARK, bg=YELLOW_LIGHT).pack(side=tk.LEFT)
         self.lbl_rec_code = tk.Label(
             rec_key_row,
             text=self.current_rec_key,
             font=("Consolas Bold", 9),
-            fg=SUCCESS_COLOR,
-            bg=BG_DARK,
+            fg="#92400E",
+            bg="#FEF3C7",
             padx=6,
             pady=2,
         )
@@ -971,11 +1029,11 @@ class SecureLockApp(tk.Tk):
             rec_key_row,
             text="📋 Copy Code",
             command=self._copy_recovery_code,
-            bg=PRIMARY_COLOR,
-            fg=TEXT_WHITE,
-            activebackground=PRIMARY_HOVER,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI", 8),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 8),
             relief=tk.FLAT,
             padx=6,
             pady=1,
@@ -1008,7 +1066,7 @@ class SecureLockApp(tk.Tk):
             self.tab_lock,
             text="Ready to lock.",
             font=("Segoe UI", 9),
-            fg=TEXT_MUTED,
+            fg=TEXT_DARK,
             bg=BG_CARD,
         )
         self.lbl_lock_status.pack(anchor="w")
@@ -1156,8 +1214,8 @@ class SecureLockApp(tk.Tk):
         lbl_step1 = tk.Label(
             self.tab_unlock,
             text="1. Select Locked Vault or Folder:",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step1.pack(anchor="w")
@@ -1170,8 +1228,8 @@ class SecureLockApp(tk.Tk):
             box,
             textvariable=self.unlock_target_var,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
             highlightbackground=BORDER_COLOR,
@@ -1183,11 +1241,11 @@ class SecureLockApp(tk.Tk):
             box,
             text="📂 Browse Locked File...",
             command=self._browse_locked_item,
-            bg=PRIMARY_COLOR,
-            fg=TEXT_WHITE,
-            activebackground=PRIMARY_HOVER,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=14,
             pady=5,
@@ -1202,8 +1260,8 @@ class SecureLockApp(tk.Tk):
         lbl_step2 = tk.Label(
             pwd_header_row,
             text="2. Enter Password:",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step2.pack(side=tk.LEFT)
@@ -1213,9 +1271,9 @@ class SecureLockApp(tk.Tk):
             text="❓ Forgot Password? (Email OTP / Recovery Key)",
             command=self._open_forgot_password_dialog,
             bg=BG_CARD,
-            fg=WARNING_COLOR,
+            fg=PRIMARY_COLOR,
             activebackground=BG_CARD,
-            activeforeground=TEXT_WHITE,
+            activeforeground=PRIMARY_HOVER,
             font=("Segoe UI Bold", 9, "underline"),
             relief=tk.FLAT,
             bd=0,
@@ -1229,8 +1287,8 @@ class SecureLockApp(tk.Tk):
         lbl_dest = tk.Label(
             self.tab_unlock,
             text="3. Restore Destination (Optional):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_dest.pack(anchor="w")
@@ -1243,8 +1301,8 @@ class SecureLockApp(tk.Tk):
             dest_box,
             textvariable=self.unlock_dest_var,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
             highlightbackground=BORDER_COLOR,
@@ -1256,16 +1314,17 @@ class SecureLockApp(tk.Tk):
             dest_box,
             text="📁 Select Folder...",
             command=self._browse_destination_folder,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Semibold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=5,
             cursor="hand2",
             bd=1,
+            highlightbackground=BORDER_COLOR,
         )
         btn_browse_dest.pack(side=tk.RIGHT)
 
@@ -1282,10 +1341,10 @@ class SecureLockApp(tk.Tk):
             self.tab_unlock,
             text="🔓 Unlock & Restore Folder",
             command=self._start_unlock_thread,
-            bg=SUCCESS_COLOR,
-            fg=TEXT_WHITE,
-            activebackground="#16a34a",
-            activeforeground=TEXT_WHITE,
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI Bold", 11),
             relief=tk.FLAT,
             pady=10,
@@ -1301,7 +1360,7 @@ class SecureLockApp(tk.Tk):
             self.tab_unlock,
             text="Ready to unlock.",
             font=("Segoe UI", 9),
-            fg=TEXT_MUTED,
+            fg=TEXT_DARK,
             bg=BG_CARD,
         )
         self.lbl_unlock_status.pack(anchor="w")
@@ -1453,8 +1512,8 @@ class SecureLockApp(tk.Tk):
         tk.Label(
             top_bar,
             text="Currently Locked Folders & Vaults:",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         ).pack(side=tk.LEFT)
 
@@ -1462,14 +1521,16 @@ class SecureLockApp(tk.Tk):
             top_bar,
             text="🔄 Refresh",
             command=self.refresh_vaults_list,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
-            padx=10,
-            pady=3,
+            padx=12,
+            pady=4,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         btn_refresh.pack(side=tk.RIGHT)
 
@@ -1498,11 +1559,11 @@ class SecureLockApp(tk.Tk):
             action_bar,
             text="🔓 Unlock Selected",
             command=self._action_unlock_selected,
-            bg=SUCCESS_COLOR,
+            bg=PRIMARY_COLOR,
             fg=TEXT_WHITE,
-            activebackground="#16a34a",
+            activebackground=PRIMARY_HOVER,
             activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=14,
             pady=6,
@@ -1515,16 +1576,16 @@ class SecureLockApp(tk.Tk):
             action_bar,
             text="📧 Email OTP Reset",
             command=self._action_forgot_selected,
-            bg=BG_INPUT,
-            fg=WARNING_COLOR,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         btn_forgot_sel.pack(side=tk.LEFT, padx=(0, 10))
 
@@ -1532,14 +1593,17 @@ class SecureLockApp(tk.Tk):
             action_bar,
             text="📁 Show in Explorer",
             command=self._action_show_in_explorer,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Semibold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
             bd=1,
+            highlightbackground=BORDER_COLOR,
         )
         btn_show_in_dir.pack(side=tk.LEFT)
 
@@ -1608,9 +1672,9 @@ class SecureLockApp(tk.Tk):
     def _init_help_tab(self):
         help_text = tk.Text(
             self.tab_help,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             font=("Segoe UI", 10),
             relief=tk.FLAT,
             padx=15,
@@ -1646,24 +1710,24 @@ class SecureLockApp(tk.Tk):
         help_text.config(state=tk.DISABLED)
 
     def _build_status_bar(self):
-        status_bar = tk.Frame(self, bg=BG_INPUT, height=26, padx=15)
+        status_bar = tk.Frame(self, bg="#F1F5F9", height=28, padx=15, highlightbackground=BORDER_COLOR, highlightthickness=1)
         status_bar.pack(fill=tk.X, side=tk.BOTTOM)
 
         lbl_engine = tk.Label(
             status_bar,
             text="🔒 Engine: AES-256-GCM Envelope Cipher | Email OTP & Dual-Slot Key Recovery",
-            font=("Segoe UI", 8),
+            font=("Segoe UI Semibold", 8),
             fg=TEXT_MUTED,
-            bg=BG_INPUT,
+            bg="#F1F5F9",
         )
         lbl_engine.pack(side=tk.LEFT, pady=4)
 
         lbl_version = tk.Label(
             status_bar,
             text="SecureLock v3.0 (English Edition)",
-            font=("Segoe UI Semibold", 8),
-            fg=TEXT_MUTED,
-            bg=BG_INPUT,
+            font=("Segoe UI Bold", 8),
+            fg=PRIMARY_COLOR,
+            bg="#F1F5F9",
         )
         lbl_version.pack(side=tk.RIGHT, pady=4)
 
