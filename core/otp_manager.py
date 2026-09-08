@@ -45,27 +45,27 @@ def verify_otp(vault_path: str, entered_code: str) -> Tuple[bool, Optional[str],
     record = _active_otps.get(path_key)
 
     if not record:
-        return False, None, "কোনো সক্রিয় ওটিপি (OTP) পাওয়া যায়নি! প্রথমে 'OTP পাঠান' বাটনে ক্লিক করুন।"
+        return False, None, "No active OTP session found! Please click 'Send OTP' first."
 
     # Check expiration
     if time.time() > record["expires_at"]:
         del _active_otps[path_key]
-        return False, None, "ওটিপি (OTP)-এর মেয়াদ শেষ হয়ে গেছে! অনুগ্রহ করে নতুন ওটিপি পাঠান।"
+        return False, None, "OTP has expired! Please request a new code."
 
     # Rate limiting
     record["attempts"] += 1
     if record["attempts"] > MAX_ATTEMPTS:
         del _active_otps[path_key]
-        return False, None, "সর্বোচ্চ চেষ্টার সীমা অতিক্রান্ত হয়েছে! অনুগ্রহ করে পুনরায় নতুন ওটিপি পাঠান।"
+        return False, None, "Maximum verification attempts exceeded! Please request a new OTP."
 
     # Constant-time comparison
     if secrets.compare_digest(entered_code.strip(), record["otp_code"]):
         recovery_secret = record["recovery_secret"]
         del _active_otps[path_key]  # Invalidate immediately upon successful use
-        return True, recovery_secret, "OTP সফলভাবে যাচাই সম্পন্ন হয়েছে!"
+        return True, recovery_secret, "OTP verified successfully!"
     else:
         remaining = MAX_ATTEMPTS - record["attempts"]
-        return False, None, f"ভুল ওটিপি (OTP) কোড! অবশিষ্ট চেষ্টা: {remaining} বার।"
+        return False, None, f"Invalid OTP code! Remaining attempts: {remaining}."
 
 
 def cancel_otp(vault_path: str) -> None:

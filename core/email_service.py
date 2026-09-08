@@ -74,27 +74,25 @@ def test_smtp_connection(config: Optional[Dict[str, Any]] = None) -> Tuple[bool,
     use_tls = config.get("use_tls", True)
 
     if not server or not sender or not pwd:
-        return False, "ইমেইল বা পাসওয়ার্ড তথ্য অসম্পূর্ণ!"
+        return False, "Incomplete configuration! Please enter both sender email and app password."
 
     try:
         if port == 465:
-            # SSL port
             context = ssl.create_default_context()
             with smtplib.SMTP_SSL(server, port, context=context, timeout=12) as smtp:
                 smtp.login(sender, pwd)
         else:
-            # Standard TLS port (587, 25)
             with smtplib.SMTP(server, port, timeout=12) as smtp:
                 if use_tls:
                     context = ssl.create_default_context()
                     smtp.starttls(context=context)
                 smtp.login(sender, pwd)
 
-        return True, "ইমেইল সার্ভারের সাথে সফলভাবে সংযোগ স্থাপিত হয়েছে!"
+        return True, "SMTP connection and login test succeeded!"
     except smtplib.SMTPAuthenticationError:
-        return False, "লগইন ব্যর্থ হয়েছে! সঠিক ইমেইল ও App Password প্রদান করুন। (Gmail ব্যবহার করলে App Password আবশ্যক)"
+        return False, "Authentication failed! Check your email and App Password. (For Gmail, a 16-character App Password is required)."
     except Exception as e:
-        return False, f"সংযোগ ব্যর্থ: {str(e)}"
+        return False, f"Connection failed: {str(e)}"
 
 
 def send_otp_email(
@@ -109,7 +107,7 @@ def send_otp_email(
     """
     config = get_email_config()
     if not config.get("is_configured"):
-        return False, "ইমেইল সেটিংস কনফিগার করা হয়নি! অনুগ্রহ করে উপরের '⚙️ Email Settings' থেকে আপনার প্রেরক ইমেইল সেট করুন।"
+        return False, "Email sender is not configured! Please open 'Email Settings' to set up your sender credentials."
 
     server = config.get("smtp_server")
     port = int(config.get("smtp_port", 587))
@@ -118,30 +116,28 @@ def send_otp_email(
     use_tls = config.get("use_tls", True)
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🔐 SecureLock - পাসওয়ার্ড রিসেট OTP কোড: {otp_code}"
+    msg["Subject"] = f"🔐 SecureLock - Password Reset OTP Code: {otp_code}"
     msg["From"] = f"SecureLock Security <{sender}>"
     msg["To"] = recipient_email
 
-    # Plain text version
     text_content = f"""SecureLock Password Reset OTP
 
-আপনার ফোল্ডার: {folder_name}
-পাসওয়ার্ড রিসেট করার জন্য ৬ সংখ্যার ওয়ান-টাইম ওটিপি (OTP):
+Target Folder: {folder_name}
+Your 6-Digit One-Time Verification Code (OTP):
 
 [ {otp_code} ]
 
-এই কোডটি আগামী ১০ মিনিট কার্যকর থাকবে।
-আপনি যদি এই অনুরোধ না করে থাকেন, তবে এই ইমেইলটি উপেক্ষা করুন।
+This code is valid for the next 10 minutes.
+If you did not initiate this request, you can safely ignore this email.
 """
     if recovery_key:
-        text_content += f"\nজরুরি ব্যাকআপ রিকভারি কোড: {recovery_key}\n"
+        text_content += f"\nEmergency Backup Recovery Key: {recovery_key}\n"
 
-    # HTML version
     recovery_html = ""
     if recovery_key:
         recovery_html = f"""
-        <div style="margin-top: 15px; padding: 12px; background: #252538; border-radius: 6px; font-family: monospace; color: #a6e3a1;">
-            <b>জরুরি ব্যাকআপ রিকভারি কোড:</b> {recovery_key}
+        <div style="margin-top: 15px; padding: 12px; background: #252538; border-radius: 6px; font-family: monospace; color: #a6e3a1; font-size: 13px;">
+            <b>Emergency Backup Key:</b> {recovery_key}
         </div>
         """
 
@@ -155,12 +151,12 @@ def send_otp_email(
         <div style="max-width: 520px; margin: 0 auto; background: #1e1e2e; border: 1px solid #313244; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <div style="background: #3d7bf0; padding: 18px 25px; text-align: center;">
                 <h2 style="margin: 0; color: #ffffff; font-size: 20px;">🔒 SecureLock Security</h2>
-                <p style="margin: 3px 0 0 0; color: #dbeafe; font-size: 13px;">ফোল্ডার পাসওয়ার্ড রিসেট ভেরিফিকেশন</p>
+                <p style="margin: 3px 0 0 0; color: #dbeafe; font-size: 13px;">Folder Password Reset Verification</p>
             </div>
             <div style="padding: 25px;">
-                <p style="margin-top: 0; font-size: 15px;">প্রিয় ব্যবহারকারী,</p>
+                <p style="margin-top: 0; font-size: 15px;">Hello,</p>
                 <p style="font-size: 14px; color: #a6adc8;">
-                    আপনার লক করা ফোল্ডার <b>"{folder_name}"</b>-এর পাসওয়ার্ড রিসেট করার জন্য নিচে একটি ওটিপি (OTP) পাঠানো হয়েছে:
+                    You requested to reset the password for your secured folder <b>"{folder_name}"</b>. Use the one-time code below:
                 </p>
                 <div style="text-align: center; margin: 25px 0;">
                     <span style="display: inline-block; padding: 12px 30px; font-size: 30px; font-weight: bold; letter-spacing: 6px; color: #ffffff; background: #181825; border: 2px solid #89b4fa; border-radius: 8px;">
@@ -168,12 +164,12 @@ def send_otp_email(
                     </span>
                 </div>
                 <p style="font-size: 13px; color: #f38ba8; text-align: center; margin-bottom: 5px;">
-                    ⚠️ এই ওটিপি কোডটি আগামী <b>১০ মিনিট</b> পর্যন্ত কার্যকর থাকবে।
+                    ⚠️ This verification code will expire in <b>10 minutes</b>.
                 </p>
                 {recovery_html}
                 <hr style="border: 0; border-top: 1px solid #313244; margin: 25px 0 15px 0;">
                 <p style="font-size: 12px; color: #6c7086; margin: 0; text-align: center;">
-                    আপনি যদি নিজে এই রিকোয়েস্ট না করে থাকেন, তবে কারো সাথে এই কোড শেয়ার করবেন না।
+                    If you did not request this code, no action is needed. Your files remain completely secure.
                 </p>
             </div>
         </div>
@@ -200,11 +196,11 @@ def send_otp_email(
                 smtp.login(sender, pwd)
                 smtp.sendmail(sender, [recipient_email], msg.as_string())
 
-        return True, f"সফলভাবে {recipient_email} ঠিকানায় ৬ সংখ্যার OTP পাঠানো হয়েছে!"
+        return True, f"A 6-digit OTP code was successfully sent to {recipient_email}!"
     except smtplib.SMTPAuthenticationError:
-        return False, "প্রেরক ইমেইলে লগইন ব্যর্থ হয়েছে! অনুগ্রহ করে Email Settings-এ গিয়ে সঠিক App Password দিন।"
+        return False, "SMTP authentication failed! Please verify your sender email and App Password in Email Settings."
     except Exception as e:
-        return False, f"ইমেইল পাঠাতে সমস্যা হয়েছে: {str(e)}"
+        return False, f"Failed to deliver email: {str(e)}"
 
 
 def mask_email(email: str) -> str:
