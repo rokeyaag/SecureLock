@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureLock - Military-Grade Windows Folder Locker & Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #070a13;
+      --card-bg: #0f1629;
+      --card-border: #1e293b;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --emerald: #10b981;
+      --purple: #a855f7;
+      --amber: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Background Glow */
+    .glow-1 {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Navigation */
+    header {
+      padding: 24px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo i {
+      color: var(--primary);
+      font-size: 24px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .btn-github {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: #1e293b;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-github:hover {
+      background: #334155;
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 30px;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: 50px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #38bdf8 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(2, 132, 199, 0.45);
+    }
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover {
+      border-color: var(--primary);
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    /* Live Interactive Demo Box */
+    .demo-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 32px;
+      margin: 60px auto 80px;
+      max-width: 860px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      text-align: left;
+    }
+    .demo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+    }
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .demo-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 34px; }
+    }
+    .input-box {
+      margin-bottom: 16px;
+    }
+    .input-box label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .input-box input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #090e1c;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .demo-status {
+      background: #090e1c;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      height: 170px;
+      overflow-y: auto;
+    }
+
+    /* Feature Grid */
+    .features {
+      padding: 40px 0 80px;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .section-title h2 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .feat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .feat-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .feat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    .feat-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feat-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-1"></div>
+
+  <div class="container">
+    <!-- Navigation -->
+    <header>
+      <nav class="nav">
+        <a href="#" class="logo">
+          <i class="fa-solid fa-shield-halved"></i>
+          SecureLock
+        </a>
+        <div class="nav-links">
+          <a href="https://lutfor-portfolio.vercel.app/" class="btn-outline" target="_blank">
+            <i class="fa-solid fa-user"></i>
+            Portfolio
+          </a>
+          <a href="https://github.com/rokeyaag/SecureLock" class="btn-github" target="_blank">
+            <i class="fa-brands fa-github"></i>
+            GitHub
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="badge">
+        <i class="fa-solid fa-lock"></i>
+        Military-Grade AES-256 Windows Folder Locker &amp; Vault
+      </div>
+      <h1>Secure Your Folders with<br><span>True Cryptographic Privacy</span></h1>
+      <p>
+        An advanced Windows desktop software engineered with AES-256-GCM authenticated cipher, dual-slot key wrapping, instant quick-lock, and Email OTP password reset.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://github.com/rokeyaag/SecureLock" class="btn-primary" target="_blank">
+          <i class="fa-brands fa-windows"></i>
+          Get Windows Software (.exe)
+        </a>
+        <a href="https://github.com/rokeyaag/SecureLock#readme" class="btn-outline" target="_blank">
+          <i class="fa-solid fa-book"></i>
+          Documentation
+        </a>
+      </div>
+    </section>
+
+    <!-- Interactive Simulator Card -->
+    <div class="demo-card">
+      <div class="demo-header">
+        <div class="window-dots">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">SecureLock v3.0 Interactive Simulation</span>
+      </div>
+
+      <div class="demo-grid">
+        <div>
+          <div class="input-box">
+            <label>Folder Name to Lock:</label>
+            <input type="text" id="demoFolder" value="Personal_Confidential_Docs" readonly>
+          </div>
+          <div class="input-box">
+            <label>Password:</label>
+            <input type="password" id="demoPass" value="SecretPassword123!@#" readonly>
+          </div>
+          <div class="input-box">
+            <label>Recovery Email for OTP:</label>
+            <input type="email" id="demoEmail" value="user@gmail.com" readonly>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn-primary" id="btnSimulate" style="padding: 10px 18px; font-size: 13px; border: 0; cursor: pointer;">
+              🔒 Simulate Lock
+            </button>
+            <button class="btn-outline" id="btnResetOtp" style="padding: 10px 18px; font-size: 13px; border: 1px solid #1e293b; cursor: pointer;">
+              📧 Send Email OTP
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Live Crypto Engine Output:</label>
+          <div class="demo-status" id="demoLogs">
+            [READY] System initialized.<br>
+            [ENGINE] AES-256-GCM ready with PBKDF2-SHA256 (100k rounds).<br>
+            Click 'Simulate Lock' to see encryption flow in action.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Architecture Features -->
+    <section class="features">
+      <div class="section-title">
+        <h2>Enterprise-Grade Architecture</h2>
+        <p style="color: var(--text-muted);">Built from the ground up for maximum confidentiality and tamper resistance</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="feat-card">
+          <div class="feat-icon" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;">
+            <i class="fa-solid fa-shield-virus"></i>
+          </div>
+          <h3>AES-256-GCM Envelope Cipher</h3>
+          <p>
+            Generates a high-entropy 256-bit Data Encryption Key (DEK). All directory contents are compressed and authenticated with chunked AES-GCM tags.
+          </p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+            <i class="fa-solid fa-envelope-circle-check"></i>
+          </div>
+          <h3>Email OTP Password Reset</h3>
+          <p>
+            Forgot your password? Receive an encrypted 6-digit one-time password on your registered email to reset your vault credentials in milliseconds.
+          </p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <h3>Dual-Slot Key Wrapping</h3>
+          <p>
+            The DEK is dual-wrapped in Slot 0 (User Password) and Slot 1 (Emergency Recovery Key). Password resets update Slot 0 without re-encrypting gigabytes of data.
+          </p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <h3>Instant Quick-Lock</h3>
+          <p>
+            For huge 50GB-100GB video or gaming directories, applies instant Windows CLSID shell masking and system attribute protection in 0.1 second.
+          </p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">
+            <i class="fa-solid fa-window-maximize"></i>
+          </div>
+          <h3>Modern Dark-Themed GUI</h3>
+          <p>
+            Sleek desktop interface with password show/hide eye toggles, password strength analyzer, live progress tracker, and central vault manager.
+          </p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+            <i class="fa-solid fa-terminal"></i>
+          </div>
+          <h3>CLI &amp; 1-Click Desktop Installer</h3>
+          <p>
+            Supports full command-line automation for power users, along with standalone <code>SecureLock.exe</code> installer and Start Menu integration.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>
+        Built with ❤️ by <a href="https://lutfor-portfolio.vercel.app/" target="_blank">Lutfor Rahman</a> &bull; Project Open Source on <a href="https://github.com/rokeyaag/SecureLock" target="_blank">GitHub</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const logBox = document.getElementById('demoLogs');
+    const btnSimulate = document.getElementById('btnSimulate');
+    const btnReset = document.getElementById('btnResetOtp');
+
+    btnSimulate.addEventListener('click', () => {
+      logBox.innerHTML = `
+        <span style="color: #a855f7;">[1/4]</span> Generating 256-bit random DEK...<br>
+        <span style="color: #38bdf8;">[2/4]</span> Compressing 'Personal_Confidential_Docs' into streaming archive...<br>
+        <span style="color: #38bdf8;">[3/4]</span> Encrypting with AES-256-GCM (PBKDF2 100k rounds)...<br>
+        <span style="color: #10b981;">[4/4]</span> Vault created: Personal_Confidential_Docs.slock ✅<br>
+        <span style="color: #f59e0b;">[RECOVERY]</span> Emergency Key: SLOCK-9F2B-44D1-A89E-7710
+      `;
+    });
+
+    btnReset.addEventListener('click', () => {
+      const code = Math.floor(100000 + Math.random() * 900000);
+      logBox.innerHTML = `
+        <span style="color: #38bdf8;">[OTP REQUEST]</span> Initiating password reset...<br>
+        <span style="color: #38bdf8;">[EMAIL]</span> Sending 6-digit OTP to u***r@gmail.com...<br>
+        <span style="color: #10b981;">[EMAIL SENT]</span> One-Time Password: <b>${code}</b><br>
+        <span style="color: #10b981;">[STATUS]</span> Enter ${code} to reset vault master password.
+      `;
+    });
+  </script>
+</body>
+</html>
