@@ -7,6 +7,7 @@ import os
 import sys
 import threading
 import subprocess
+import shutil
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
@@ -908,6 +909,15 @@ class SecureLockApp(tk.Tk):
         )
         btn_browse_lock.pack(side=tk.RIGHT)
 
+        self.lbl_folder_size_hint = tk.Label(
+            self.tab_lock,
+            text="",
+            font=("Segoe UI Semibold", 8),
+            fg=TEXT_MUTED,
+            bg=BG_CARD,
+        )
+        self.lbl_folder_size_hint.pack(anchor="w", pady=(2, 0))
+
         # 2. Security Mode
         lbl_step2 = tk.Label(
             self.tab_lock,
@@ -1079,7 +1089,40 @@ class SecureLockApp(tk.Tk):
     def _browse_folder_to_lock(self):
         folder = filedialog.askdirectory(title="Select Folder to Lock")
         if folder:
-            self.lock_folder_path_var.set(os.path.normpath(folder))
+            norm_folder = os.path.normpath(folder)
+            self.lock_folder_path_var.set(norm_folder)
+            threading.Thread(target=self._check_folder_size_hint, args=(norm_folder,), daemon=True).start()
+
+    def _check_folder_size_hint(self, folder):
+        try:
+            total_size = 0
+            for root, _, files in os.walk(folder):
+                for f in files:
+                    try:
+                        total_size += os.path.getsize(os.path.join(root, f))
+                    except OSError:
+                        pass
+            total_gb = total_size / (1024 ** 3)
+            drive = os.path.splitdrive(folder)[0] or folder
+            free_gb = shutil.disk_usage(drive).free / (1024 ** 3)
+
+            if total_gb >= 2.0:
+                self.after(0, lambda: self._apply_large_folder_recommendation(total_gb, free_gb))
+            else:
+                mb = total_size / (1024 ** 2)
+                self.after(0, lambda: self.lbl_folder_size_hint.config(
+                    text=f"📁 Folder size: {mb:.1f} MB | Free drive space: {free_gb:.1f} GB",
+                    fg=TEXT_MUTED
+                ))
+        except Exception:
+            pass
+
+    def _apply_large_folder_recommendation(self, total_gb, free_gb):
+        self.lock_mode_var.set("quick_lock")
+        self.lbl_folder_size_hint.config(
+            text=f"⚡ Large Folder Detected ({total_gb:.1f} GB) — 'Instant Quick Lock' auto-selected (Locks in 1 sec with 0 extra disk space)",
+            fg="#B45309"
+        )
 
     def _on_password_typing(self, event=None):
         pwd = self.lock_pwd_entry.get()
@@ -1109,6 +1152,51 @@ class SecureLockApp(tk.Tk):
         if pwd != confirm_pwd:
             messagebox.showerror("Error", "Passwords do not match! Please retype.")
             return
+
+        # Check folder size and drive free space before locking
+        try:
+            drive = os.path.splitdrive(folder_path)[0] or folder_path
+            free_bytes = shutil.disk_usage(drive).free
+            free_gb = free_bytes / (1024 ** 3)
+
+            total_size = 0
+            for root, _, files in os.walk(folder_path):
+                for f in files:
+                    try:
+                        total_size += os.path.getsize(os.path.join(root, f))
+                    except OSError:
+                        pass
+            total_gb = total_size / (1024 ** 3)
+
+            if mode == "aes256":
+                if free_bytes < total_size:
+                    use_quick = messagebox.askyesno(
+                        "Insufficient Disk Space for AES-256",
+                        f"Target drive '{drive}' only has {free_gb:.1f} GB free space, but this folder is {total_gb:.1f} GB.\n\n"
+                        f"Creating an encrypted AES-256 container requires at least {total_gb:.1f} GB of free disk space.\n\n"
+                        f"Would you like to switch to '⚡ Instant Quick Lock' instead?\n"
+                        f"It locks this {total_gb:.1f} GB folder in under 1 second without needing any extra disk space!",
+                        default=messagebox.YES,
+                    )
+                    if use_quick:
+                        mode = "quick_lock"
+                        self.lock_mode_var.set("quick_lock")
+                    else:
+                        return
+                elif total_gb > 10.0:
+                    use_quick = messagebox.askyesno(
+                        "Large Folder Notice",
+                        f"This folder is very large ({total_gb:.1f} GB).\n\n"
+                        f"Full AES-256 byte-by-byte encryption will take 30 to 90 minutes.\n\n"
+                        f"Would you like to switch to '⚡ Instant Quick Lock' instead?\n"
+                        f"It locks in under 1 second without copying any data.",
+                        default=messagebox.YES,
+                    )
+                    if use_quick:
+                        mode = "quick_lock"
+                        self.lock_mode_var.set("quick_lock")
+        except Exception:
+            pass
 
         email_hint = f"\nRecovery Email: {rec_email}" if rec_email else ""
         confirm = messagebox.askyesno(
