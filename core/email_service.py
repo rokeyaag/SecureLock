@@ -4,6 +4,7 @@ Uses standard Python smtplib with TLS support.
 
 import os
 import json
+import time
 import smtplib
 import ssl
 from email.mime.text import MIMEText
@@ -117,7 +118,8 @@ def send_otp_email(
     use_tls = config.get("use_tls", True)
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"SecureLock Password Reset OTP: {otp_code}"
+    time_str = time.strftime("%I:%M %p")
+    msg["Subject"] = f"SecureLock OTP Code: {otp_code} [{time_str}]"
     msg["From"] = f"SecureLock <{sender}>"
     msg["To"] = recipient_email
     msg["Reply-To"] = sender
