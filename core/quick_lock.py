@@ -7,6 +7,7 @@ import sys
 import subprocess
 import hashlib
 import json
+import ctypes
 from typing import Optional, Tuple, Dict, Any
 
 LOCK_CLSID = "{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}"
@@ -28,12 +29,34 @@ def _verify_secret(secret: str, stored_hash: str, salt_hex: str) -> bool:
 
 
 def _run_attrib(args: list) -> bool:
-    """Executes attrib command quietly."""
+    """Sets or clears attributes instantly using direct Windows Kernel32 API."""
+    if sys.platform != "win32" or not args:
+        return True
     try:
-        subprocess.run(["attrib"] + args, check=True, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0)
+        target_path = os.path.abspath(args[-1])
+        FILE_ATTRIBUTE_NORMAL = 0x80
+        FILE_ATTRIBUTE_HIDDEN = 0x02
+        FILE_ATTRIBUTE_SYSTEM = 0x04
+
+        is_hide = any("+h" in arg or "+s" in arg for arg in args)
+        if is_hide:
+            ctypes.windll.kernel32.SetFileAttributesW(target_path, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)
+        else:
+            ctypes.windll.kernel32.SetFileAttributesW(target_path, FILE_ATTRIBUTE_NORMAL)
         return True
     except Exception:
-        return False
+        try:
+            # Fallback with safety timeout
+            subprocess.run(
+                ["attrib"] + args,
+                check=False,
+                capture_output=True,
+                timeout=1.5,
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            )
+            return True
+        except Exception:
+            return False
 
 
 def quick_lock_folder(
