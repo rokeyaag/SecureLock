@@ -1,0 +1,3 @@
+﻿User-agent: *
+Allow: /
+Sitemap: https://rokeyaag.github.io/SecureLock/sitemap.xml
