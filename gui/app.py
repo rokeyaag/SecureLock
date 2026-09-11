@@ -909,6 +909,7 @@ class SecureLockApp(tk.Tk):
             highlightthickness=1,
         )
         self.entry_lock_path.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=6, padx=(0, 10))
+        self.entry_lock_path.bind("<KeyRelease>", lambda e: self._on_lock_path_changed())
 
         btn_browse_lock = tk.Button(
             folder_box,
@@ -1037,16 +1038,16 @@ class SecureLockApp(tk.Tk):
         self.entry_recovery_email.pack(fill=tk.X, ipady=4, pady=(2, 6))
 
         # Auto Recovery Key
-        self.current_rec_key = generate_recovery_key()
+        self.current_rec_key = ""
         rec_key_row = tk.Frame(rec_card, bg=YELLOW_LIGHT)
         rec_key_row.pack(fill=tk.X)
 
         tk.Label(rec_key_row, text="Backup Recovery Key:", font=("Segoe UI", 8), fg=TEXT_DARK, bg=YELLOW_LIGHT).pack(side=tk.LEFT)
         self.lbl_rec_code = tk.Label(
             rec_key_row,
-            text=self.current_rec_key,
+            text="------ (Auto-generated on lock) ------",
             font=("Consolas Bold", 9),
-            fg="#92400E",
+            fg=TEXT_MUTED,
             bg="#FEF3C7",
             padx=6,
             pady=2,
@@ -1099,16 +1100,28 @@ class SecureLockApp(tk.Tk):
         )
         self.lbl_lock_status.pack(anchor="w")
 
+    def _ensure_recovery_key_generated(self):
+        if not self.current_rec_key:
+            self.current_rec_key = generate_recovery_key()
+            self.lbl_rec_code.config(text=self.current_rec_key, fg="#92400E")
+        return self.current_rec_key
+
+    def _on_lock_path_changed(self):
+        if self.lock_folder_path_var.get().strip():
+            self._ensure_recovery_key_generated()
+
     def _copy_recovery_code(self):
+        key = self._ensure_recovery_key_generated()
         self.clipboard_clear()
-        self.clipboard_append(self.current_rec_key)
-        messagebox.showinfo("Copied", f"Recovery key copied to clipboard:\n{self.current_rec_key}")
+        self.clipboard_append(key)
+        messagebox.showinfo("Copied", f"Recovery key copied to clipboard:\n{key}")
 
     def _browse_folder_to_lock(self):
         folder = filedialog.askdirectory(title="Select Folder to Lock")
         if folder:
             norm_folder = os.path.normpath(folder)
             self.lock_folder_path_var.set(norm_folder)
+            self._ensure_recovery_key_generated()
             threading.Thread(target=self._check_folder_size_hint, args=(norm_folder,), daemon=True).start()
 
     def _check_folder_size_hint(self, folder):
@@ -1153,7 +1166,7 @@ class SecureLockApp(tk.Tk):
         confirm_pwd = self.lock_confirm_entry.get()
         mode = self.lock_mode_var.get()
         rec_email = self.entry_recovery_email.get().strip()
-        rec_key = self.current_rec_key
+        rec_key = self._ensure_recovery_key_generated()
 
         if not folder_path:
             messagebox.showerror("Error", "Please select a folder to lock!")
@@ -1295,8 +1308,13 @@ class SecureLockApp(tk.Tk):
         self.lock_confirm_entry.clear()
         self.lbl_strength.config(text="Password Strength: Waiting for input...", fg=TEXT_MUTED)
 
-        self.current_rec_key = generate_recovery_key()
-        self.lbl_rec_code.config(text=self.current_rec_key)
+        # Clear recovery email and reset recovery key by default
+        self.entry_recovery_email.delete(0, tk.END)
+        self.current_rec_key = ""
+        self.lbl_rec_code.config(text="------ (Auto-generated on lock) ------", fg=TEXT_MUTED)
+        self.lbl_folder_size_hint.config(text="")
+        self.lock_progress["value"] = 0
+
         self.refresh_vaults_list()
 
         email_note = f"\nRecovery Email: {rec_email} (OTP will be sent here for resets)" if rec_email else ""
