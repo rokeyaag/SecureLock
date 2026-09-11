@@ -861,6 +861,24 @@ class SecureLockApp(tk.Tk):
         self.notebook.add(self.tab_help, text=" ℹ️ Help & Tips ")
         self._init_help_tab()
 
+        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+    def _on_tab_changed(self, event=None):
+        try:
+            selected_tab = self.notebook.select()
+            if selected_tab == str(self.tab_vaults):
+                self.refresh_vaults_list()
+            elif selected_tab == str(self.tab_unlock):
+                if not self.unlock_target_var.get().strip():
+                    vaults = load_vaults()
+                    for v in reversed(vaults):
+                        lpath = v.get("locked_path", "")
+                        if os.path.exists(lpath):
+                            self.unlock_target_var.set(lpath)
+                            break
+        except Exception:
+            pass
+
     # =========================================================================
     # TAB 1: LOCK FOLDER
     # =========================================================================
@@ -1342,6 +1360,24 @@ class SecureLockApp(tk.Tk):
         )
         btn_browse_slock.pack(side=tk.RIGHT)
 
+        btn_pick_vault = tk.Button(
+            box,
+            text="📋 View Locked Vaults",
+            command=self._switch_to_vaults_tab,
+            bg="#FEF3C7",
+            fg="#92400E",
+            activebackground="#FDE68A",
+            activeforeground="#92400E",
+            font=("Segoe UI Bold", 9),
+            relief=tk.FLAT,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            bd=1,
+            highlightbackground="#F59E0B",
+        )
+        btn_pick_vault.pack(side=tk.RIGHT, padx=(0, 6))
+
         pwd_header_row = tk.Frame(self.tab_unlock, bg=BG_CARD)
         pwd_header_row.pack(fill=tk.X, pady=(12, 4))
 
@@ -1469,14 +1505,43 @@ class SecureLockApp(tk.Tk):
             bd=0,
         )
 
+    def _switch_to_vaults_tab(self):
+        self.notebook.select(self.tab_vaults)
+        self.refresh_vaults_list()
+
     def _open_forgot_password_dialog(self):
         target = self.unlock_target_var.get().strip()
         if not target:
-            messagebox.showinfo("Notice", "Please select a locked file or folder first!")
+            vaults = load_vaults()
+            for v in reversed(vaults):
+                lpath = v.get("locked_path", "")
+                if os.path.exists(lpath):
+                    target = lpath
+                    self.unlock_target_var.set(target)
+                    break
+
+        if not target:
+            messagebox.showinfo("Notice", "Please select a locked file or folder first, or choose one from the 'Locked Vaults' tab!")
             return
 
         if not os.path.exists(target):
-            messagebox.showerror("Error", "The selected locked container was not found!")
+            from core.quick_lock import LOCK_CLSID
+            clean = target.rstrip("\\/")
+            cand = f"{clean}.{LOCK_CLSID}"
+            if os.path.exists(cand):
+                target = cand
+                self.unlock_target_var.set(target)
+            else:
+                for v in load_vaults():
+                    if target.lower() in [v.get("name", "").lower(), v.get("original_path", "").lower()]:
+                        lpath = v.get("locked_path", "")
+                        if os.path.exists(lpath):
+                            target = lpath
+                            self.unlock_target_var.set(target)
+                            break
+
+        if not os.path.exists(target):
+            messagebox.showerror("Error", "The selected locked container was not found!\n\nTip: Open the 'Locked Vaults' tab to see all locked folders.")
             return
 
         def on_reset_or_unlock(new_pwd=None):
@@ -1510,11 +1575,36 @@ class SecureLockApp(tk.Tk):
         dest = self.unlock_dest_var.get().strip() or None
 
         if not target:
-            messagebox.showerror("Error", "Please select a file or folder to unlock!")
+            vaults = load_vaults()
+            for v in reversed(vaults):
+                lpath = v.get("locked_path", "")
+                if os.path.exists(lpath):
+                    target = lpath
+                    self.unlock_target_var.set(target)
+                    break
+
+        if not target:
+            messagebox.showerror("Error", "Please select a file or folder to unlock!\n\nTip: You can select directly from the 'Locked Vaults' tab.")
             return
 
         if not os.path.exists(target):
-            messagebox.showerror("Error", "The selected file or folder was not found!")
+            from core.quick_lock import LOCK_CLSID
+            clean = target.rstrip("\\/")
+            cand = f"{clean}.{LOCK_CLSID}"
+            if os.path.exists(cand):
+                target = cand
+                self.unlock_target_var.set(target)
+            else:
+                for v in load_vaults():
+                    if target.lower() in [v.get("name", "").lower(), v.get("original_path", "").lower()]:
+                        lpath = v.get("locked_path", "")
+                        if os.path.exists(lpath):
+                            target = lpath
+                            self.unlock_target_var.set(target)
+                            break
+
+        if not os.path.exists(target):
+            messagebox.showerror("Error", "The selected file or folder was not found!\n\nTip: Go to 'Locked Vaults' tab to view all locked folders and click 'Unlock Selected'.")
             return
 
         if not pwd:
