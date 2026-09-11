@@ -8,6 +8,7 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formatdate, make_msgid
 from typing import Tuple, Dict, Any, Optional
 
 CONFIG_DIR = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "SecureLock")
@@ -116,9 +117,12 @@ def send_otp_email(
     use_tls = config.get("use_tls", True)
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🔐 SecureLock - Password Reset OTP Code: {otp_code}"
-    msg["From"] = f"SecureLock Security <{sender}>"
+    msg["Subject"] = f"SecureLock Password Reset OTP: {otp_code}"
+    msg["From"] = f"SecureLock <{sender}>"
     msg["To"] = recipient_email
+    msg["Reply-To"] = sender
+    msg["Date"] = formatdate(localtime=True)
+    msg["Message-ID"] = make_msgid(domain="gmail.com")
 
     text_content = f"""SecureLock Password Reset OTP
 
