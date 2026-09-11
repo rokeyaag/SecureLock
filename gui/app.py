@@ -7,6 +7,7 @@ import os
 import sys
 import threading
 import subprocess
+import shutil
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
@@ -51,11 +52,19 @@ from gui.components import (
     BG_CARD,
     BG_INPUT,
     BORDER_COLOR,
+    BORDER_YELLOW,
+    BORDER_RED,
     PRIMARY_COLOR,
     PRIMARY_HOVER,
+    ACCENT_YELLOW,
+    YELLOW_LIGHT,
+    YELLOW_BTN,
+    YELLOW_BTN_HOVER,
     SUCCESS_COLOR,
     DANGER_COLOR,
     WARNING_COLOR,
+    TEXT_BLACK,
+    TEXT_DARK,
     TEXT_WHITE,
     TEXT_MUTED,
     TEXT_SUBTLE,
@@ -68,7 +77,7 @@ class EmailSettingsDialog(tk.Toplevel):
     """Dialog to configure sender SMTP settings for OTP delivery."""
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("ইমেইল সেটিংস কনফিগারেশন (Email OTP Settings)")
+        self.title("Email OTP Configuration (SMTP Settings)")
         self.geometry("520x460")
         self.resizable(False, False)
         self.configure(bg=BG_CARD)
@@ -91,15 +100,15 @@ class EmailSettingsDialog(tk.Toplevel):
 
         tk.Label(
             pad,
-            text="⚙️ ইমেইল ওটিপি (OTP) প্রেরক সেটিংস",
+            text="⚙️ Email OTP Sender Settings",
             font=("Segoe UI Bold", 13),
-            fg=TEXT_WHITE,
+            fg=PRIMARY_COLOR,
             bg=BG_CARD,
         ).pack(anchor="w")
 
         tk.Label(
             pad,
-            text="পাসওয়ার্ড রিসেট ওটিপি পাঠানোর জন্য প্রেরক ইমেইল কনফিগার করুন:",
+            text="Configure your sender email to transmit password reset OTP codes:",
             font=("Segoe UI", 9),
             fg=TEXT_MUTED,
             bg=BG_CARD,
@@ -108,13 +117,13 @@ class EmailSettingsDialog(tk.Toplevel):
         cfg = get_email_config()
 
         # Sender Email
-        tk.Label(pad, text="প্রেরক ইমেইল (Sender Gmail / Outlook):", font=("Segoe UI Semibold", 9), fg=TEXT_WHITE, bg=BG_CARD).pack(anchor="w")
-        self.entry_sender = tk.Entry(pad, bg=BG_INPUT, fg=TEXT_WHITE, insertbackground=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 10), highlightbackground=BORDER_COLOR, highlightthickness=1)
+        tk.Label(pad, text="Sender Email (Gmail / Outlook / SMTP):", font=("Segoe UI Semibold", 9), fg=TEXT_BLACK, bg=BG_CARD).pack(anchor="w")
+        self.entry_sender = tk.Entry(pad, bg=BG_INPUT, fg=TEXT_BLACK, insertbackground=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 10), highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.entry_sender.pack(fill=tk.X, ipady=5, pady=(3, 10))
         self.entry_sender.insert(0, cfg.get("sender_email", ""))
 
         # App Password
-        tk.Label(pad, text="অ্যাপ পাসওয়ার্ড (App Password - 16 অক্ষরের কোড):", font=("Segoe UI Semibold", 9), fg=TEXT_WHITE, bg=BG_CARD).pack(anchor="w")
+        tk.Label(pad, text="App Password (16-character code):", font=("Segoe UI Semibold", 9), fg=TEXT_BLACK, bg=BG_CARD).pack(anchor="w")
         self.entry_pwd = PasswordEntry(pad)
         self.entry_pwd.pack(fill=tk.X, pady=(3, 10))
         self.entry_pwd.set(cfg.get("sender_password", ""))
@@ -125,23 +134,23 @@ class EmailSettingsDialog(tk.Toplevel):
 
         col1 = tk.Frame(row, bg=BG_CARD)
         col1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        tk.Label(col1, text="SMTP সার্ভার:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
-        self.entry_server = tk.Entry(col1, bg=BG_INPUT, fg=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
+        tk.Label(col1, text="SMTP Server:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
+        self.entry_server = tk.Entry(col1, bg=BG_INPUT, fg=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.entry_server.pack(fill=tk.X, ipady=4, pady=(2, 0))
         self.entry_server.insert(0, cfg.get("smtp_server", "smtp.gmail.com"))
 
         col2 = tk.Frame(row, bg=BG_CARD)
         col2.pack(side=tk.LEFT, fill=tk.X, expand=False, padx=(8, 0))
-        tk.Label(col2, text="পোর্ট (Port):", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
-        self.entry_port = tk.Entry(col2, bg=BG_INPUT, fg=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 9), width=8, highlightbackground=BORDER_COLOR, highlightthickness=1)
+        tk.Label(col2, text="Port:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
+        self.entry_port = tk.Entry(col2, bg=BG_INPUT, fg=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 9), width=8, highlightbackground=BORDER_COLOR, highlightthickness=1)
         self.entry_port.pack(fill=tk.X, ipady=4, pady=(2, 0))
         self.entry_port.insert(0, str(cfg.get("smtp_port", 587)))
 
         # Help Tip Box
-        tip_box = tk.Frame(pad, bg=BG_INPUT, highlightbackground=BORDER_COLOR, highlightthickness=1, padx=10, pady=8)
+        tip_box = tk.Frame(pad, bg=YELLOW_LIGHT, highlightbackground=BORDER_YELLOW, highlightthickness=1, padx=10, pady=8)
         tip_box.pack(fill=tk.X, pady=(0, 15))
-        tip_text = "💡 Gmail ব্যবহারের নিয়ম: Google Account > Security > 2-Step Verification চালু করে 'App Passwords' তৈরি করে সেই ১৬ অক্ষরের কোডটি দিন।"
-        tk.Label(tip_box, text=tip_text, font=("Segoe UI", 8), fg=WARNING_COLOR, bg=BG_INPUT, justify=tk.LEFT, wraplength=440).pack(anchor="w")
+        tip_text = "💡 Gmail Setup: Enable 2-Step Verification in your Google Account > Security, generate an 'App Password', and paste that 16-character code here."
+        tk.Label(tip_box, text=tip_text, font=("Segoe UI", 8), fg=WARNING_COLOR, bg=YELLOW_LIGHT, justify=tk.LEFT, wraplength=440).pack(anchor="w")
 
         # Action Buttons
         btn_box = tk.Frame(pad, bg=BG_CARD)
@@ -149,24 +158,24 @@ class EmailSettingsDialog(tk.Toplevel):
 
         self.btn_test = tk.Button(
             btn_box,
-            text="🧪 টেস্ট কানেকশন (Test Connection)",
+            text="🧪 Test Connection",
             command=self._test_connection,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         self.btn_test.pack(side=tk.LEFT)
 
         btn_save = tk.Button(
             btn_box,
-            text="💾 সেটিংস সেভ করুন (Save)",
+            text="💾 Save Settings",
             command=self._save_settings,
             bg=PRIMARY_COLOR,
             fg=TEXT_WHITE,
@@ -188,7 +197,7 @@ class EmailSettingsDialog(tk.Toplevel):
         port = self.entry_port.get().strip()
 
         if not sender or not pwd:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে প্রেরক ইমেইল ও অ্যাপ পাসওয়ার্ড লিখুন!", parent=self)
+            messagebox.showerror("Validation Error", "Please enter both sender email and App Password!", parent=self)
             return
 
         cfg = {
@@ -199,7 +208,7 @@ class EmailSettingsDialog(tk.Toplevel):
             "use_tls": True,
         }
 
-        self.btn_test.config(state=tk.DISABLED, text="টেস্ট করা হচ্ছে...")
+        self.btn_test.config(state=tk.DISABLED, text="Testing Connection...")
         self.update_idletasks()
 
         def test_worker():
@@ -209,11 +218,11 @@ class EmailSettingsDialog(tk.Toplevel):
         threading.Thread(target=test_worker, daemon=True).start()
 
     def _on_test_result(self, success, msg):
-        self.btn_test.config(state=tk.NORMAL, text="🧪 টেস্ট কানেকশন (Test Connection)")
+        self.btn_test.config(state=tk.NORMAL, text="🧪 Test Connection")
         if success:
-            messagebox.showinfo("সফল", msg, parent=self)
+            messagebox.showinfo("Success", msg, parent=self)
         else:
-            messagebox.showerror("টেস্ট ব্যর্থ", msg, parent=self)
+            messagebox.showerror("Connection Failed", msg, parent=self)
 
     def _save_settings(self):
         sender = self.entry_sender.get().strip()
@@ -222,7 +231,7 @@ class EmailSettingsDialog(tk.Toplevel):
         port = int(self.entry_port.get().strip()) if self.entry_port.get().strip().isdigit() else 587
 
         save_email_config(sender, pwd, server, port, True)
-        messagebox.showinfo("সফল", "ইমেইল কনফিগারেশন সফলভাবে সংরক্ষিত হয়েছে!", parent=self)
+        messagebox.showinfo("Saved", "Email configuration saved successfully!", parent=self)
         self.destroy()
 
 
@@ -233,7 +242,7 @@ class ResetPasswordDialog(tk.Toplevel):
         self.target_path = target_path
         self.on_success_cb = on_success_cb
 
-        self.title("পাসওয়ার্ড রিকভারি ও রিসেট (Password Recovery & Reset)")
+        self.title("Password Recovery & Reset")
         self.geometry("560x570")
         self.minsize(540, 520)
         self.configure(bg=BG_CARD)
@@ -289,31 +298,31 @@ class ResetPasswordDialog(tk.Toplevel):
 
         tk.Label(
             pad_frame,
-            text="🔑 পাসওয়ার্ড উদ্ধার ও নতুন পাসওয়ার্ড রিসেট",
+            text="🔑 Password Recovery & Reset",
             font=("Segoe UI Bold", 13),
-            fg=TEXT_WHITE,
+            fg=PRIMARY_COLOR,
             bg=BG_CARD,
         ).pack(anchor="w")
 
         tk.Label(
             pad_frame,
-            text=f"টার্গেট ফোল্ডার: {self.folder_name}",
-            font=("Segoe UI", 9),
-            fg=PRIMARY_COLOR,
+            text=f"Target: {self.folder_name}",
+            font=("Segoe UI Semibold", 9),
+            fg=TEXT_DARK,
             bg=BG_CARD,
         ).pack(anchor="w", pady=(2, 10))
 
         # Email OTP Card
         otp_card = tk.LabelFrame(
             pad_frame,
-            text=" 📧 পদ্ধতি ১: ইমেইল OTP ভেরিফিকেশন (Email OTP - Recommended) ",
+            text=" 📧 Method 1: Email OTP Verification (Recommended) ",
             font=("Segoe UI Semibold", 9),
-            bg=BG_INPUT,
-            fg=SUCCESS_COLOR,
+            bg=YELLOW_LIGHT,
+            fg=WARNING_COLOR,
             padx=12,
             pady=10,
             relief=tk.FLAT,
-            highlightbackground=BORDER_COLOR,
+            highlightbackground=BORDER_YELLOW,
             highlightthickness=1,
         )
         otp_card.pack(fill=tk.X, pady=(0, 10))
@@ -322,35 +331,35 @@ class ResetPasswordDialog(tk.Toplevel):
             masked = mask_email(self.recovery_email)
             tk.Label(
                 otp_card,
-                text=f"রেজিস্টার্ড রিকভারি ইমেইল: {masked}",
+                text=f"Registered Recovery Email: {masked}",
                 font=("Segoe UI Semibold", 9),
-                fg=TEXT_WHITE,
-                bg=BG_INPUT,
+                fg=TEXT_BLACK,
+                bg=YELLOW_LIGHT,
             ).pack(anchor="w")
         else:
             tk.Label(
                 otp_card,
-                text="কোনো রিকভারি ইমেইল যুক্ত করা ছিল না। তবে নিচে প্রেরণের জন্য ইমেইল দিতে পারেন:",
+                text="No recovery email was attached. Enter destination email below:",
                 font=("Segoe UI", 8),
                 fg=TEXT_MUTED,
-                bg=BG_INPUT,
+                bg=YELLOW_LIGHT,
             ).pack(anchor="w")
-            self.entry_adhoc_email = tk.Entry(otp_card, bg=BG_CARD, fg=TEXT_WHITE, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
+            self.entry_adhoc_email = tk.Entry(otp_card, bg=BG_CARD, fg=TEXT_BLACK, relief=tk.FLAT, font=("Segoe UI", 9), highlightbackground=BORDER_COLOR, highlightthickness=1)
             self.entry_adhoc_email.pack(fill=tk.X, ipady=3, pady=(2, 6))
 
         # Send OTP row
-        send_row = tk.Frame(otp_card, bg=BG_INPUT, pady=4)
+        send_row = tk.Frame(otp_card, bg=YELLOW_LIGHT, pady=4)
         send_row.pack(fill=tk.X)
 
         self.btn_send_otp = tk.Button(
             send_row,
-            text="📩 ইমেইলে ৬ সংখ্যার OTP পাঠান (Send OTP)",
+            text="📩 Send 6-Digit OTP",
             command=self._send_otp_to_email,
             bg=PRIMARY_COLOR,
             fg=TEXT_WHITE,
             activebackground=PRIMARY_HOVER,
             activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=5,
@@ -359,18 +368,18 @@ class ResetPasswordDialog(tk.Toplevel):
         )
         self.btn_send_otp.pack(side=tk.LEFT)
 
-        self.lbl_otp_sent_info = tk.Label(send_row, text="", font=("Segoe UI", 8), fg=WARNING_COLOR, bg=BG_INPUT)
+        self.lbl_otp_sent_info = tk.Label(send_row, text="", font=("Segoe UI Bold", 8), fg=WARNING_COLOR, bg=YELLOW_LIGHT)
         self.lbl_otp_sent_info.pack(side=tk.LEFT, padx=10)
 
         # OTP input row
-        otp_in_row = tk.Frame(otp_card, bg=BG_INPUT, pady=4)
+        otp_in_row = tk.Frame(otp_card, bg=YELLOW_LIGHT, pady=4)
         otp_in_row.pack(fill=tk.X)
-        tk.Label(otp_in_row, text="ইমেইলে প্রাপ্ত OTP কোড লিখুন:", font=("Segoe UI", 9), fg=TEXT_WHITE, bg=BG_INPUT).pack(side=tk.LEFT)
+        tk.Label(otp_in_row, text="Enter OTP Code:", font=("Segoe UI Semibold", 9), fg=TEXT_BLACK, bg=YELLOW_LIGHT).pack(side=tk.LEFT)
         self.entry_otp_code = tk.Entry(
             otp_in_row,
             bg=BG_CARD,
-            fg=SUCCESS_COLOR,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Consolas Bold", 13),
             width=10,
@@ -385,7 +394,7 @@ class ResetPasswordDialog(tk.Toplevel):
         fallback_frame.pack(fill=tk.X)
         tk.Label(
             fallback_frame,
-            text="অথবা ব্যাকআপ রিকভারি কোড / উত্তর লিখুন (ঐচ্ছিক):",
+            text="Or enter Backup Recovery Key (Optional / Offline):",
             font=("Segoe UI", 8),
             fg=TEXT_MUTED,
             bg=BG_CARD,
@@ -394,8 +403,8 @@ class ResetPasswordDialog(tk.Toplevel):
         self.entry_recovery_fallback = tk.Entry(
             fallback_frame,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 9),
             highlightbackground=BORDER_COLOR,
@@ -406,9 +415,9 @@ class ResetPasswordDialog(tk.Toplevel):
         # New Password Inputs
         tk.Label(
             pad_frame,
-            text="নতুন পাসওয়ার্ড দিন (New Password):",
+            text="Enter New Password:",
             font=("Segoe UI Semibold", 9),
-            fg=TEXT_WHITE,
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         ).pack(anchor="w")
 
@@ -417,9 +426,9 @@ class ResetPasswordDialog(tk.Toplevel):
 
         tk.Label(
             pad_frame,
-            text="নতুন পাসওয়ার্ড নিশ্চিত করুন (Confirm Password):",
+            text="Confirm New Password:",
             font=("Segoe UI Semibold", 9),
-            fg=TEXT_WHITE,
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         ).pack(anchor="w")
 
@@ -432,12 +441,12 @@ class ResetPasswordDialog(tk.Toplevel):
 
         self.btn_reset = tk.Button(
             btn_box,
-            text="✅ OTP যাচাই ও পাসওয়ার্ড রিসেট করুন (Verify & Reset Password)",
+            text="✅ Verify OTP & Reset Password",
             command=self._do_verify_and_reset,
-            bg=SUCCESS_COLOR,
-            fg=TEXT_WHITE,
-            activebackground="#16a34a",
-            activeforeground=TEXT_WHITE,
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI Bold", 10),
             relief=tk.FLAT,
             pady=8,
@@ -448,17 +457,17 @@ class ResetPasswordDialog(tk.Toplevel):
 
         btn_cancel = tk.Button(
             btn_box,
-            text="❌ বাতিল (Cancel)",
+            text="Cancel",
             command=self.destroy,
-            bg=BG_INPUT,
+            bg=BG_CARD,
             fg=TEXT_MUTED,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI", 9),
             relief=tk.FLAT,
             pady=4,
             cursor="hand2",
-            bd=0,
+            bd=1,
         )
         btn_cancel.pack(fill=tk.X)
 
@@ -468,14 +477,14 @@ class ResetPasswordDialog(tk.Toplevel):
             target_email = self.entry_adhoc_email.get().strip()
 
         if not target_email or "@" not in target_email:
-            messagebox.showerror("ত্রুটি", "একটি সঠিক রিকভারি ইমেইল অ্যাড্রেস প্রয়োজন!", parent=self)
+            messagebox.showerror("Invalid Email", "Please enter a valid recovery email address!", parent=self)
             return
 
         cfg = get_email_config()
         if not cfg.get("is_configured"):
             ans = messagebox.askyesno(
-                "ইমেইল সেটিংস প্রয়োজন",
-                "ইমেইল পাঠানোর জন্য এখনও কোনো প্রেরক ইমেইল কনফিগার করা হয়নি!\n\nআপনি কি এখনই 'Email Settings' কনফিগার করতে চান?",
+                "Email Settings Required",
+                "No sender email has been configured yet!\n\nWould you like to configure Email Settings now?",
                 parent=self,
             )
             if ans:
@@ -485,8 +494,8 @@ class ResetPasswordDialog(tk.Toplevel):
         rec_secret = self.recovery_key or "SLOCK-KEY-AUTO"
         otp_code = create_otp(self.target_path, rec_secret, target_email)
 
-        self.btn_send_otp.config(state=tk.DISABLED, text="ইমেইল পাঠানো হচ্ছে...")
-        self.lbl_otp_sent_info.config(text="অপেক্ষা করুন...", fg=WARNING_COLOR)
+        self.btn_send_otp.config(state=tk.DISABLED, text="Sending OTP...")
+        self.lbl_otp_sent_info.config(text="Please wait...", fg=WARNING_COLOR)
 
         def send_worker():
             success, msg = send_otp_email(
@@ -500,14 +509,14 @@ class ResetPasswordDialog(tk.Toplevel):
         threading.Thread(target=send_worker, daemon=True).start()
 
     def _on_otp_sent(self, success, msg):
-        self.btn_send_otp.config(state=tk.NORMAL, text="🔄 পুনরায় OTP পাঠান (Resend)")
+        self.btn_send_otp.config(state=tk.NORMAL, text="🔄 Resend OTP")
         if success:
-            self.lbl_otp_sent_info.config(text="✅ OTP পাঠানো হয়েছে! ইনবক্স চেক করুন।", fg=SUCCESS_COLOR)
+            self.lbl_otp_sent_info.config(text="✅ OTP sent! Check your inbox.", fg=SUCCESS_COLOR)
             self.entry_otp_code.focus_set()
-            messagebox.showinfo("ইমেইল পাঠানো সম্পন্ন", msg, parent=self)
+            messagebox.showinfo("OTP Sent", msg, parent=self)
         else:
-            self.lbl_otp_sent_info.config(text="❌ ব্যর্থ!", fg=DANGER_COLOR)
-            messagebox.showerror("ইমেইল প্রেরণ ব্যর্থ", msg, parent=self)
+            self.lbl_otp_sent_info.config(text="❌ Delivery Failed!", fg=DANGER_COLOR)
+            messagebox.showerror("Delivery Failed", msg, parent=self)
 
     def _do_verify_and_reset(self):
         otp_code = self.entry_otp_code.get().strip()
@@ -516,11 +525,11 @@ class ResetPasswordDialog(tk.Toplevel):
         confirm_pwd = self.entry_confirm_pwd.get()
 
         if not new_pwd:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে একটি নতুন পাসওয়ার্ড লিখুন!", parent=self)
+            messagebox.showerror("Validation Error", "Please enter a new password!", parent=self)
             return
 
         if new_pwd != confirm_pwd:
-            messagebox.showerror("ত্রুটি", "দুই ঘরের নতুন পাসওয়ার্ড মেলেনি!", parent=self)
+            messagebox.showerror("Validation Error", "Passwords do not match! Please check again.", parent=self)
             return
 
         recovery_secret_to_use = None
@@ -529,7 +538,7 @@ class ResetPasswordDialog(tk.Toplevel):
         if otp_code:
             valid, rec_secret, msg = verify_otp(self.target_path, otp_code)
             if not valid:
-                messagebox.showerror("OTP ভেরিফিকেশন ব্যর্থ", msg, parent=self)
+                messagebox.showerror("Verification Failed", msg, parent=self)
                 return
             recovery_secret_to_use = rec_secret
 
@@ -538,7 +547,7 @@ class ResetPasswordDialog(tk.Toplevel):
             recovery_secret_to_use = fallback_secret
 
         if not recovery_secret_to_use:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে ইমেইলে প্রাপ্ত OTP কোডটি লিখুন অথবা ব্যাকআপ রিকভারি কোড দিন!", parent=self)
+            messagebox.showerror("Missing Code", "Please enter the OTP from your email or your backup recovery key!", parent=self)
             return
 
         # Perform password reset
@@ -549,17 +558,95 @@ class ResetPasswordDialog(tk.Toplevel):
                 quick_reset_password(self.target_path, recovery_secret_to_use, new_pwd)
 
             messagebox.showinfo(
-                "সফল",
-                "অভিনন্দন! OTP সফলভাবে যাচাই হয়েছে এবং নতুন পাসওয়ার্ড সেট হয়েছে।\nএখন থেকে এই নতুন পাসওয়ার্ড দিয়ে আনলক করতে পারবেন।",
+                "Success",
+                "Congratulations! Identity verified and password reset successfully.\nYou can now unlock the vault using your new password.",
                 parent=self,
             )
             self.destroy()
             self.on_success_cb(new_pwd)
 
         except (InvalidRecoveryKeyError, ValueError) as e:
-            messagebox.showerror("রিকভারি ব্যর্থ", f"ভুল রিকভারি কোড বা সিকিউরিটি উত্তর!\n{e}", parent=self)
+            messagebox.showerror("Recovery Failed", f"Invalid recovery key or security answer!\n{e}", parent=self)
         except Exception as e:
-            messagebox.showerror("ত্রুটি", f"পাসওয়ার্ড রিসেট ব্যর্থ: {e}", parent=self)
+            messagebox.showerror("Error", f"Password reset failed: {e}", parent=self)
+
+
+def install_system_shortcuts() -> tuple[bool, str]:
+    """Installs SecureLock to Local AppData and creates Desktop and Start Menu shortcuts."""
+    try:
+        local_appdata = os.environ.get("LOCALAPPDATA", os.path.expanduser("~\\AppData\\Local"))
+        install_dir = os.path.join(local_appdata, "Programs", "SecureLock")
+        os.makedirs(install_dir, exist_ok=True)
+        exe_target = os.path.join(install_dir, "SecureLock.exe")
+
+        is_frozen = getattr(sys, "frozen", False)
+        current_exe = sys.executable if is_frozen else os.path.abspath(sys.argv[0])
+
+        if is_frozen:
+            if os.path.abspath(current_exe).lower() != os.path.abspath(exe_target).lower():
+                try:
+                    import shutil
+                    shutil.copy2(current_exe, exe_target)
+                    target_to_link = exe_target
+                    work_dir = install_dir
+                except Exception:
+                    target_to_link = current_exe
+                    work_dir = os.path.dirname(current_exe)
+            else:
+                target_to_link = exe_target
+                work_dir = install_dir
+        else:
+            target_to_link = sys.executable
+            work_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Copy icon to install directory if available
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        icon_source = os.path.join(base_dir, "assets", "icon.ico")
+        icon_target = os.path.join(install_dir, "icon.ico")
+        if os.path.exists(icon_source):
+            try:
+                import shutil
+                shutil.copy2(icon_source, icon_target)
+                icon_path_for_link = icon_target
+            except Exception:
+                icon_path_for_link = icon_source
+        elif os.path.exists(icon_target):
+            icon_path_for_link = icon_target
+        else:
+            icon_path_for_link = target_to_link
+
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        desktop_shortcut = os.path.join(desktop, "SecureLock.lnk")
+
+        roaming_appdata = os.environ.get("APPDATA", os.path.expanduser("~\\AppData\\Roaming"))
+        start_menu = os.path.join(roaming_appdata, "Microsoft", "Windows", "Start Menu", "Programs")
+        start_shortcut = os.path.join(start_menu, "SecureLock.lnk")
+
+        args = "" if is_frozen else f'"{os.path.abspath(os.path.join(work_dir, "..", "main.py"))}"'
+
+        ps_script = f"""
+        $ws = New-Object -ComObject WScript.Shell
+        $s1 = $ws.CreateShortcut('{desktop_shortcut}')
+        $s1.TargetPath = '{target_to_link}'
+        $s1.Arguments = '{args}'
+        $s1.WorkingDirectory = '{work_dir}'
+        $s1.IconLocation = '{icon_path_for_link}'
+        $s1.Description = 'SecureLock - Windows Folder Locker & Vault'
+        $s1.Save()
+
+        $s2 = $ws.CreateShortcut('{start_shortcut}')
+        $s2.TargetPath = '{target_to_link}'
+        $s2.Arguments = '{args}'
+        $s2.WorkingDirectory = '{work_dir}'
+        $s2.IconLocation = '{icon_path_for_link}'
+        $s2.Description = 'SecureLock - Windows Folder Locker & Vault'
+        $s2.Save()
+        """
+        creation_flag = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW
+        subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], check=True, creationflags=creation_flag)
+        return True, target_to_link
+    except Exception as e:
+        return False, str(e)
 
 
 class SecureLockApp(tk.Tk):
@@ -570,12 +657,45 @@ class SecureLockApp(tk.Tk):
         self.minsize(760, 680)
         self.configure(bg=BG_DARK)
 
+        self._load_app_icon()
         self._setup_styles()
         self._build_header()
         self._build_tabs()
         self._build_status_bar()
 
         self.refresh_vaults_list()
+        self.after(1000, self._check_first_run_shortcut)
+
+    def _load_app_icon(self):
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        ico_path = os.path.join(base_dir, "assets", "icon.ico")
+        if os.path.exists(ico_path):
+            try:
+                self.iconbitmap(ico_path)
+            except Exception:
+                pass
+        png_path = os.path.join(base_dir, "assets", "icon_48.png")
+        if os.path.exists(png_path):
+            try:
+                self._app_icon_photo = tk.PhotoImage(file=png_path)
+                self.iconphoto(True, self._app_icon_photo)
+            except Exception:
+                pass
+
+    def _check_first_run_shortcut(self):
+        try:
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+            shortcut_path = os.path.join(desktop, "SecureLock.lnk")
+            if not os.path.exists(shortcut_path):
+                ans = messagebox.askyesno(
+                    "SecureLock Setup",
+                    "Welcome to SecureLock!\n\nWould you like to install SecureLock shortcuts on your Desktop and Start Menu for quick access?",
+                    parent=self,
+                )
+                if ans:
+                    self._install_desktop_shortcuts()
+        except Exception:
+            pass
 
     def _setup_styles(self):
         style = ttk.Style(self)
@@ -585,25 +705,25 @@ class SecureLockApp(tk.Tk):
             "TNotebook",
             background=BG_DARK,
             borderwidth=0,
-            tabmargins=[15, 5, 15, 0],
+            tabmargins=[15, 6, 15, 0],
         )
         style.configure(
             "TNotebook.Tab",
-            background=BG_CARD,
-            foreground=TEXT_MUTED,
-            font=("Segoe UI Semibold", 10),
-            padding=[18, 9],
+            background="#E2E8F0",
+            foreground=TEXT_BLACK,
+            font=("Segoe UI Bold", 10),
+            padding=[20, 10],
             borderwidth=0,
         )
         style.map(
             "TNotebook.Tab",
-            background=[("selected", PRIMARY_COLOR), ("active", BG_INPUT)],
-            foreground=[("selected", TEXT_WHITE), ("active", TEXT_WHITE)],
+            background=[("selected", PRIMARY_COLOR), ("active", "#FDE68A")],
+            foreground=[("selected", TEXT_WHITE), ("active", TEXT_BLACK)],
         )
 
         style.configure(
             "Horizontal.TProgressbar",
-            troughcolor=BG_INPUT,
+            troughcolor="#E2E8F0",
             background=PRIMARY_COLOR,
             thickness=8,
             borderwidth=0,
@@ -611,72 +731,119 @@ class SecureLockApp(tk.Tk):
 
         style.configure(
             "Treeview",
-            background=BG_CARD,
-            foreground=TEXT_WHITE,
-            fieldbackground=BG_CARD,
-            borderwidth=0,
+            background="#FFFFFF",
+            foreground=TEXT_BLACK,
+            fieldbackground="#FFFFFF",
+            borderwidth=1,
             rowheight=32,
             font=("Segoe UI", 9),
         )
         style.configure(
             "Treeview.Heading",
-            background=BG_INPUT,
-            foreground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
-            borderwidth=0,
+            background="#FEF3C7",
+            foreground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
+            borderwidth=1,
             relief=tk.FLAT,
         )
         style.map("Treeview", background=[("selected", PRIMARY_COLOR)], foreground=[("selected", TEXT_WHITE)])
 
     def _build_header(self):
-        header_frame = tk.Frame(self, bg=BG_DARK, pady=10, padx=25)
+        header_frame = tk.Frame(self, bg=PRIMARY_COLOR, pady=12, padx=22)
         header_frame.pack(fill=tk.X)
 
-        left_header = tk.Frame(header_frame, bg=BG_DARK)
+        left_header = tk.Frame(header_frame, bg=PRIMARY_COLOR)
         left_header.pack(side=tk.LEFT)
 
+        # Show 48x48 brand logo if available
+        self._logo_photo = None
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        logo_path = os.path.join(base_dir, "assets", "icon_48.png")
+        if os.path.exists(logo_path):
+            try:
+                self._logo_photo = tk.PhotoImage(file=logo_path)
+                lbl_logo = tk.Label(left_header, image=self._logo_photo, bg=PRIMARY_COLOR)
+                lbl_logo.pack(side=tk.LEFT, padx=(0, 12))
+            except Exception:
+                pass
+
+        titles_box = tk.Frame(left_header, bg=PRIMARY_COLOR)
+        titles_box.pack(side=tk.LEFT)
+
         title_label = tk.Label(
-            left_header,
-            text="🔒 SecureLock",
-            font=("Segoe UI Black", 20),
+            titles_box,
+            text="SecureLock",
+            font=("Segoe UI Black", 18),
             fg=TEXT_WHITE,
-            bg=BG_DARK,
+            bg=PRIMARY_COLOR,
         )
         title_label.pack(anchor="w")
 
         subtitle_label = tk.Label(
-            left_header,
-            text="উইন্ডোজ ফোল্ডার লকার ও ভল্ট (AES-256 Envelope Encryption ও Email OTP পাসওয়ার্ড রিসেট)",
-            font=("Segoe UI", 10),
-            fg=TEXT_MUTED,
-            bg=BG_DARK,
-        )
-        subtitle_label.pack(anchor="w", pady=(2, 0))
-
-        # Email Settings Button on Top Right
-        btn_email_settings = tk.Button(
-            header_frame,
-            text="⚙️ Email Settings",
-            command=self._open_email_settings,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
+            titles_box,
+            text="Advanced Folder Locker • AES-256 Envelope Encryption • Email OTP Recovery",
             font=("Segoe UI Semibold", 9),
+            fg="#FEF08A",
+            bg=PRIMARY_COLOR,
+        )
+        subtitle_label.pack(anchor="w", pady=(1, 0))
+
+        # Right Action Buttons
+        right_actions = tk.Frame(header_frame, bg=PRIMARY_COLOR)
+        right_actions.pack(side=tk.RIGHT, pady=4)
+
+        btn_install_shortcuts = tk.Button(
+            right_actions,
+            text="📌 Setup PC Shortcut",
+            command=self._install_desktop_shortcuts,
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
-        btn_email_settings.pack(side=tk.RIGHT, pady=5)
+        btn_install_shortcuts.pack(side=tk.LEFT, padx=(0, 8))
+
+        btn_email_settings = tk.Button(
+            right_actions,
+            text="⚙️ Email Settings",
+            command=self._open_email_settings,
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
+            relief=tk.FLAT,
+            padx=12,
+            pady=6,
+            cursor="hand2",
+            bd=0,
+        )
+        btn_email_settings.pack(side=tk.LEFT)
+
+    def _install_desktop_shortcuts(self):
+        success, msg = install_system_shortcuts()
+        if success:
+            messagebox.showinfo(
+                "Setup Completed",
+                f"SecureLock was successfully set up on this PC!\n\n"
+                f"Desktop and Start Menu shortcuts have been created.\nProgram: {msg}",
+                parent=self,
+            )
+        else:
+            messagebox.showerror("Setup Error", f"Could not create shortcuts: {msg}", parent=self)
 
     def _open_email_settings(self):
         EmailSettingsDialog(self)
 
     def _build_tabs(self):
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=(5, 10))
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=(8, 10))
 
         self.tab_lock = tk.Frame(self.notebook, bg=BG_CARD, padx=25, pady=15)
         self.notebook.add(self.tab_lock, text=" 🔒 Lock Folder ")
@@ -694,6 +861,24 @@ class SecureLockApp(tk.Tk):
         self.notebook.add(self.tab_help, text=" ℹ️ Help & Tips ")
         self._init_help_tab()
 
+        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+    def _on_tab_changed(self, event=None):
+        try:
+            selected_tab = self.notebook.select()
+            if selected_tab == str(self.tab_vaults):
+                self.refresh_vaults_list()
+            elif selected_tab == str(self.tab_unlock):
+                if not self.unlock_target_var.get().strip():
+                    vaults = load_vaults()
+                    for v in reversed(vaults):
+                        lpath = v.get("locked_path", "")
+                        if os.path.exists(lpath):
+                            self.unlock_target_var.set(lpath)
+                            break
+        except Exception:
+            pass
+
     # =========================================================================
     # TAB 1: LOCK FOLDER
     # =========================================================================
@@ -701,9 +886,9 @@ class SecureLockApp(tk.Tk):
         # 1. Folder Selection
         lbl_step1 = tk.Label(
             self.tab_lock,
-            text="1. লক করার ফোল্ডার নির্বাচন করুন (Select Folder to Lock):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="1. Select Folder to Lock:",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step1.pack(anchor="w")
@@ -716,24 +901,25 @@ class SecureLockApp(tk.Tk):
             folder_box,
             textvariable=self.lock_folder_path_var,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
             highlightbackground=BORDER_COLOR,
             highlightthickness=1,
         )
         self.entry_lock_path.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=6, padx=(0, 10))
+        self.entry_lock_path.bind("<KeyRelease>", lambda e: self._on_lock_path_changed())
 
         btn_browse_lock = tk.Button(
             folder_box,
             text="📁 Browse Folder...",
             command=self._browse_folder_to_lock,
-            bg=PRIMARY_COLOR,
-            fg=TEXT_WHITE,
-            activebackground=PRIMARY_HOVER,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=14,
             pady=5,
@@ -742,44 +928,53 @@ class SecureLockApp(tk.Tk):
         )
         btn_browse_lock.pack(side=tk.RIGHT)
 
+        self.lbl_folder_size_hint = tk.Label(
+            self.tab_lock,
+            text="",
+            font=("Segoe UI Semibold", 8),
+            fg=TEXT_MUTED,
+            bg=BG_CARD,
+        )
+        self.lbl_folder_size_hint.pack(anchor="w", pady=(2, 0))
+
         # 2. Security Mode
         lbl_step2 = tk.Label(
             self.tab_lock,
-            text="2. লকিং মোড (Security Mode):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="2. Security Mode:",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step2.pack(anchor="w", pady=(6, 2))
 
         self.lock_mode_var = tk.StringVar(value="aes256")
-        mode_box = tk.Frame(self.tab_lock, bg=BG_INPUT, highlightbackground=BORDER_COLOR, highlightthickness=1, padx=10, pady=5)
+        mode_box = tk.Frame(self.tab_lock, bg=YELLOW_LIGHT, highlightbackground=BORDER_YELLOW, highlightthickness=1, padx=10, pady=5)
         mode_box.pack(fill=tk.X, pady=(0, 6))
 
         rb_aes = tk.Radiobutton(
             mode_box,
-            text="🛡️ AES-256 Envelope Encryption (Recommended - সর্বোচ্চ সামরিক নিরাপত্তা)",
+            text="🛡️ AES-256 Envelope Encryption (Recommended - Military Grade)",
             variable=self.lock_mode_var,
             value="aes256",
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BG_INPUT,
-            activeforeground=TEXT_WHITE,
-            selectcolor=BG_DARK,
+            bg=YELLOW_LIGHT,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_LIGHT,
+            activeforeground=TEXT_BLACK,
+            selectcolor="#FFFFFF",
             font=("Segoe UI Semibold", 9),
         )
         rb_aes.pack(anchor="w")
 
         rb_quick = tk.Radiobutton(
             mode_box,
-            text="⚡ Instant Quick Lock (তাৎক্ষণিক লক - বড় সাইজের ফাইলের জন্য)",
+            text="⚡ Instant Quick Lock (Fast Lock for Large Files/Games)",
             variable=self.lock_mode_var,
             value="quick_lock",
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BG_INPUT,
-            activeforeground=TEXT_WHITE,
-            selectcolor=BG_DARK,
+            bg=YELLOW_LIGHT,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_LIGHT,
+            activeforeground=TEXT_BLACK,
+            selectcolor="#FFFFFF",
             font=("Segoe UI Semibold", 9),
         )
         rb_quick.pack(anchor="w", pady=(2, 0))
@@ -787,9 +982,9 @@ class SecureLockApp(tk.Tk):
         # 3. Password Input
         lbl_step3 = tk.Label(
             self.tab_lock,
-            text="3. পাসওয়ার্ড সেট করুন (Set Password):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="3. Set Password:",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step3.pack(anchor="w")
@@ -799,61 +994,61 @@ class SecureLockApp(tk.Tk):
 
         col1 = tk.Frame(pwd_frame, bg=BG_CARD)
         col1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        tk.Label(col1, text="পাসওয়ার্ড (Password):", font=("Segoe UI", 9), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
+        tk.Label(col1, text="Password:", font=("Segoe UI", 9), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
         self.lock_pwd_entry = PasswordEntry(col1)
         self.lock_pwd_entry.pack(fill=tk.X, pady=(2, 0))
         self.lock_pwd_entry.bind_change(self._on_password_typing)
 
         col2 = tk.Frame(pwd_frame, bg=BG_CARD)
         col2.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
-        tk.Label(col2, text="কনফার্ম পাসওয়ার্ড (Confirm):", font=("Segoe UI", 9), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
+        tk.Label(col2, text="Confirm Password:", font=("Segoe UI", 9), fg=TEXT_MUTED, bg=BG_CARD).pack(anchor="w")
         self.lock_confirm_entry = PasswordEntry(col2)
         self.lock_confirm_entry.pack(fill=tk.X, pady=(2, 0))
 
-        self.lbl_strength = tk.Label(self.tab_lock, text="পাসওয়ার্ডের শক্তি: অপেক্ষা করা হচ্ছে...", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD)
+        self.lbl_strength = tk.Label(self.tab_lock, text="Password Strength: Waiting for input...", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD)
         self.lbl_strength.pack(anchor="w", pady=(1, 6))
 
         # 4. Recovery & Email OTP Card
         rec_card = tk.LabelFrame(
             self.tab_lock,
-            text=" 📧 জরুরি রিকভারি ইমেইল ও OTP অপশন (Email OTP & Recovery) ",
+            text=" 📧 Emergency Recovery & Email OTP Options ",
             font=("Segoe UI Semibold", 9),
-            bg=BG_INPUT,
+            bg=YELLOW_LIGHT,
             fg=WARNING_COLOR,
             padx=12,
             pady=8,
             relief=tk.FLAT,
-            highlightbackground=BORDER_COLOR,
+            highlightbackground=BORDER_YELLOW,
             highlightthickness=1,
         )
         rec_card.pack(fill=tk.X, pady=(0, 8))
 
         # Recovery Email Input
-        tk.Label(rec_card, text="আপনার ব্যক্তিগত রিকভারি ইমেইল (পাসওয়ার্ড ভুলে গেলে ওটিপি যাবে):", font=("Segoe UI Semibold", 8), fg=TEXT_WHITE, bg=BG_INPUT).pack(anchor="w")
+        tk.Label(rec_card, text="Recovery Email (OTP will be sent here if password is forgotten):", font=("Segoe UI Semibold", 8), fg=TEXT_BLACK, bg=YELLOW_LIGHT).pack(anchor="w")
         self.entry_recovery_email = tk.Entry(
             rec_card,
-            bg=BG_CARD,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 9),
-            highlightbackground=BORDER_COLOR,
+            highlightbackground=BORDER_YELLOW,
             highlightthickness=1,
         )
         self.entry_recovery_email.pack(fill=tk.X, ipady=4, pady=(2, 6))
 
         # Auto Recovery Key
-        self.current_rec_key = generate_recovery_key()
-        rec_key_row = tk.Frame(rec_card, bg=BG_INPUT)
+        self.current_rec_key = ""
+        rec_key_row = tk.Frame(rec_card, bg=YELLOW_LIGHT)
         rec_key_row.pack(fill=tk.X)
 
-        tk.Label(rec_key_row, text="ব্যাকআপ কোড:", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_INPUT).pack(side=tk.LEFT)
+        tk.Label(rec_key_row, text="Backup Recovery Key:", font=("Segoe UI", 8), fg=TEXT_DARK, bg=YELLOW_LIGHT).pack(side=tk.LEFT)
         self.lbl_rec_code = tk.Label(
             rec_key_row,
-            text=self.current_rec_key,
+            text="------ (Auto-generated on lock) ------",
             font=("Consolas Bold", 9),
-            fg=SUCCESS_COLOR,
-            bg=BG_DARK,
+            fg=TEXT_MUTED,
+            bg="#FEF3C7",
             padx=6,
             pady=2,
         )
@@ -863,11 +1058,11 @@ class SecureLockApp(tk.Tk):
             rec_key_row,
             text="📋 Copy Code",
             command=self._copy_recovery_code,
-            bg=PRIMARY_COLOR,
-            fg=TEXT_WHITE,
-            activebackground=PRIMARY_HOVER,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI", 8),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 8),
             relief=tk.FLAT,
             padx=6,
             pady=1,
@@ -879,7 +1074,7 @@ class SecureLockApp(tk.Tk):
         # Lock Action Button
         self.btn_execute_lock = tk.Button(
             self.tab_lock,
-            text="🔒 ফোল্ডার লক করুন (Lock Folder Now)",
+            text="🔒 Lock Folder Now",
             command=self._start_lock_thread,
             bg=PRIMARY_COLOR,
             fg=TEXT_WHITE,
@@ -898,27 +1093,72 @@ class SecureLockApp(tk.Tk):
 
         self.lbl_lock_status = tk.Label(
             self.tab_lock,
-            text="প্রস্তুত (Ready to lock).",
+            text="Ready to lock.",
             font=("Segoe UI", 9),
-            fg=TEXT_MUTED,
+            fg=TEXT_DARK,
             bg=BG_CARD,
         )
         self.lbl_lock_status.pack(anchor="w")
 
+    def _ensure_recovery_key_generated(self):
+        if not self.current_rec_key:
+            self.current_rec_key = generate_recovery_key()
+            self.lbl_rec_code.config(text=self.current_rec_key, fg="#92400E")
+        return self.current_rec_key
+
+    def _on_lock_path_changed(self):
+        if self.lock_folder_path_var.get().strip():
+            self._ensure_recovery_key_generated()
+
     def _copy_recovery_code(self):
+        key = self._ensure_recovery_key_generated()
         self.clipboard_clear()
-        self.clipboard_append(self.current_rec_key)
-        messagebox.showinfo("কপি সম্পন্ন", f"রিকভারি কোড ক্লিপবোর্ডে কপি করা হয়েছে:\n{self.current_rec_key}")
+        self.clipboard_append(key)
+        messagebox.showinfo("Copied", f"Recovery key copied to clipboard:\n{key}")
 
     def _browse_folder_to_lock(self):
-        folder = filedialog.askdirectory(title="লক করার জন্য ফোল্ডার বাছাই করুন (Select Folder to Lock)")
+        folder = filedialog.askdirectory(title="Select Folder to Lock")
         if folder:
-            self.lock_folder_path_var.set(os.path.normpath(folder))
+            norm_folder = os.path.normpath(folder)
+            self.lock_folder_path_var.set(norm_folder)
+            self._ensure_recovery_key_generated()
+            threading.Thread(target=self._check_folder_size_hint, args=(norm_folder,), daemon=True).start()
+
+    def _check_folder_size_hint(self, folder):
+        try:
+            total_size = 0
+            for root, _, files in os.walk(folder):
+                for f in files:
+                    try:
+                        total_size += os.path.getsize(os.path.join(root, f))
+                    except OSError:
+                        pass
+            total_gb = total_size / (1024 ** 3)
+            drive = os.path.splitdrive(folder)[0] or folder
+            free_gb = shutil.disk_usage(drive).free / (1024 ** 3)
+
+            if total_gb >= 2.0:
+                self.after(0, lambda: self._apply_large_folder_recommendation(total_gb, free_gb))
+            else:
+                mb = total_size / (1024 ** 2)
+                self.after(0, lambda: self.lbl_folder_size_hint.config(
+                    text=f"📁 Folder size: {mb:.1f} MB | Free drive space: {free_gb:.1f} GB",
+                    fg=TEXT_MUTED
+                ))
+        except Exception:
+            pass
+
+    def _apply_large_folder_recommendation(self, total_gb, free_gb):
+        self.lock_mode_var.set("quick_lock")
+        self.lbl_folder_size_hint.config(
+            text=f"⚡ Large Folder Detected ({total_gb:.1f} GB) — 'Instant Quick Lock' auto-selected (Locks in 1 sec with 0 extra disk space)",
+            fg="#B45309"
+        )
 
     def _on_password_typing(self, event=None):
         pwd = self.lock_pwd_entry.get()
         score, text, color = evaluate_password_strength(pwd)
-        self.lbl_strength.config(text=f"পাসওয়ার্ডের শক্তি: {text}", fg=color)
+        self.lbl_strength.config(text=f"Password Strength: {text}", fg=color)
 
     def _start_lock_thread(self):
         folder_path = self.lock_folder_path_var.get().strip()
@@ -926,33 +1166,78 @@ class SecureLockApp(tk.Tk):
         confirm_pwd = self.lock_confirm_entry.get()
         mode = self.lock_mode_var.get()
         rec_email = self.entry_recovery_email.get().strip()
-        rec_key = self.current_rec_key
+        rec_key = self._ensure_recovery_key_generated()
 
         if not folder_path:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে লক করার ফোল্ডারটি সিলেক্ট করুন!")
+            messagebox.showerror("Error", "Please select a folder to lock!")
             return
 
         if not os.path.isdir(folder_path):
-            messagebox.showerror("ত্রুটি", "বাছাইকৃত ফোল্ডারটি খুঁজে পাওয়া যায়নি!")
+            messagebox.showerror("Error", "The selected folder was not found!")
             return
 
         if not pwd:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে একটি পাসওয়ার্ড লিখুন!")
+            messagebox.showerror("Error", "Please enter a password!")
             return
 
         if pwd != confirm_pwd:
-            messagebox.showerror("ত্রুটি", "দুই ঘরের পাসওয়ার্ড মেলেনি! আবার টাইপ করুন।")
+            messagebox.showerror("Error", "Passwords do not match! Please retype.")
             return
 
-        email_hint = f"\nরিকভারি ইমেইল: {rec_email}" if rec_email else ""
+        # Check folder size and drive free space before locking
+        try:
+            drive = os.path.splitdrive(folder_path)[0] or folder_path
+            free_bytes = shutil.disk_usage(drive).free
+            free_gb = free_bytes / (1024 ** 3)
+
+            total_size = 0
+            for root, _, files in os.walk(folder_path):
+                for f in files:
+                    try:
+                        total_size += os.path.getsize(os.path.join(root, f))
+                    except OSError:
+                        pass
+            total_gb = total_size / (1024 ** 3)
+
+            if mode == "aes256":
+                if free_bytes < total_size:
+                    use_quick = messagebox.askyesno(
+                        "Insufficient Disk Space for AES-256",
+                        f"Target drive '{drive}' only has {free_gb:.1f} GB free space, but this folder is {total_gb:.1f} GB.\n\n"
+                        f"Creating an encrypted AES-256 container requires at least {total_gb:.1f} GB of free disk space.\n\n"
+                        f"Would you like to switch to '⚡ Instant Quick Lock' instead?\n"
+                        f"It locks this {total_gb:.1f} GB folder in under 1 second without needing any extra disk space!",
+                        default=messagebox.YES,
+                    )
+                    if use_quick:
+                        mode = "quick_lock"
+                        self.lock_mode_var.set("quick_lock")
+                    else:
+                        return
+                elif total_gb > 10.0:
+                    use_quick = messagebox.askyesno(
+                        "Large Folder Notice",
+                        f"This folder is very large ({total_gb:.1f} GB).\n\n"
+                        f"Full AES-256 byte-by-byte encryption will take 30 to 90 minutes.\n\n"
+                        f"Would you like to switch to '⚡ Instant Quick Lock' instead?\n"
+                        f"It locks in under 1 second without copying any data.",
+                        default=messagebox.YES,
+                    )
+                    if use_quick:
+                        mode = "quick_lock"
+                        self.lock_mode_var.set("quick_lock")
+        except Exception:
+            pass
+
+        email_hint = f"\nRecovery Email: {rec_email}" if rec_email else ""
         confirm = messagebox.askyesno(
-            "নিশ্চিতকরণ",
-            f"আপনি কি নিশ্চিত যে এই ফোল্ডারটি লক করতে চান?\n\nফোল্ডার: {folder_path}\nপদ্ধতি: {'AES-256 এনক্রিপশন' if mode == 'aes256' else 'কুইক লক'}{email_hint}\n\nজরুরি রিকভারি কোড: {rec_key}",
+            "Confirm Action",
+            f"Are you sure you want to lock this folder?\n\nFolder: {folder_path}\nSecurity Mode: {'AES-256 Envelope Encryption' if mode == 'aes256' else 'Instant Quick Lock'}{email_hint}\n\nEmergency Recovery Key: {rec_key}",
         )
         if not confirm:
             return
 
-        self.btn_execute_lock.config(state=tk.DISABLED, text="লক করা হচ্ছে (Processing...)...")
+        self.btn_execute_lock.config(state=tk.DISABLED, text="Locking Folder (Processing...)...")
         self.lock_progress["value"] = 0
 
         threading.Thread(
@@ -985,14 +1270,14 @@ class SecureLockApp(tk.Tk):
                     progress_callback=update_cb,
                 )
             else:
-                self.after(0, lambda: self._update_lock_ui(50, "Windows CLSID ও এট্রিবিউট প্রটেকশন প্রয়োগ করা হচ্ছে..."))
+                self.after(0, lambda: self._update_lock_ui(50, "Applying Windows CLSID & attribute protections..."))
                 locked_path, used_rec_key = quick_lock_folder(
                     folder_path=folder_path,
                     password=pwd,
                     recovery_key=rec_key,
                     recovery_email=rec_email,
                 )
-                self.after(0, lambda: self._update_lock_ui(100, "তাৎক্ষণিকভাবে লক সম্পন্ন হয়েছে!"))
+                self.after(0, lambda: self._update_lock_ui(100, "Folder locked instantly!"))
 
             add_vault(
                 name=folder_name,
@@ -1015,31 +1300,36 @@ class SecureLockApp(tk.Tk):
         self.lbl_lock_status.config(text=msg, fg=TEXT_WHITE)
 
     def _on_lock_success(self, locked_path, mode, rec_key, rec_email):
-        self.btn_execute_lock.config(state=tk.NORMAL, text="🔒 ফোল্ডার লক করুন (Lock Folder Now)")
-        self.lbl_lock_status.config(text="✅ সফলভাবে ফোল্ডার লক সম্পন্ন হয়েছে!", fg=SUCCESS_COLOR)
+        self.btn_execute_lock.config(state=tk.NORMAL, text="🔒 Lock Folder Now")
+        self.lbl_lock_status.config(text="✅ Folder locked successfully!", fg=SUCCESS_COLOR)
 
         self.lock_folder_path_var.set("")
         self.lock_pwd_entry.clear()
         self.lock_confirm_entry.clear()
-        self.lbl_strength.config(text="পাসওয়ার্ডের শক্তি: অপেক্ষা করা হচ্ছে...", fg=TEXT_MUTED)
+        self.lbl_strength.config(text="Password Strength: Waiting for input...", fg=TEXT_MUTED)
 
-        self.current_rec_key = generate_recovery_key()
-        self.lbl_rec_code.config(text=self.current_rec_key)
+        # Clear recovery email and reset recovery key by default
+        self.entry_recovery_email.delete(0, tk.END)
+        self.current_rec_key = ""
+        self.lbl_rec_code.config(text="------ (Auto-generated on lock) ------", fg=TEXT_MUTED)
+        self.lbl_folder_size_hint.config(text="")
+        self.lock_progress["value"] = 0
+
         self.refresh_vaults_list()
 
-        email_note = f"\nরিকভারি ইমেইল: {rec_email} (পাসওয়ার্ড ভুলে গেলে ওটিপি যাবে)" if rec_email else ""
+        email_note = f"\nRecovery Email: {rec_email} (OTP will be sent here for resets)" if rec_email else ""
         msg = (
-            f"অভিনন্দন! ফোল্ডারটি সফলভাবে লক করা হয়েছে।\n\n"
-            f"অবস্থান: {locked_path}\n"
-            f"জরুরি রিকভারি কোড: {rec_key}{email_note}\n\n"
-            f"*পাসওয়ার্ড ভুলে গেলে 'Unlock Folder' ট্যাবে 'Forgot Password?' বাটনে ইমেইল OTP দিয়ে রিসেট করতে পারবেন।"
+            f"Congratulations! The folder has been securely locked.\n\n"
+            f"Locked Location: {locked_path}\n"
+            f"Emergency Recovery Key: {rec_key}{email_note}\n\n"
+            f"*If you ever forget your password, go to 'Unlock Folder' and click 'Forgot Password?' to reset via Email OTP."
         )
-        messagebox.showinfo("সাফল্য (Success)", msg)
+        messagebox.showinfo("Lock Successful", msg)
 
     def _on_lock_error(self, err_msg):
-        self.btn_execute_lock.config(state=tk.NORMAL, text="🔒 ফোল্ডার লক করুন (Lock Folder Now)")
-        self.lbl_lock_status.config(text=f"❌ ত্রুটি: {err_msg}", fg=DANGER_COLOR)
-        messagebox.showerror("লক ব্যর্থ হয়েছে", f"ফোল্ডার লক করার সময় সমস্যা হয়েছে:\n{err_msg}")
+        self.btn_execute_lock.config(state=tk.NORMAL, text="🔒 Lock Folder Now")
+        self.lbl_lock_status.config(text=f"❌ Error: {err_msg}", fg=DANGER_COLOR)
+        messagebox.showerror("Lock Failed", f"An error occurred while locking the folder:\n{err_msg}")
 
     # =========================================================================
     # TAB 2: UNLOCK FOLDER
@@ -1047,9 +1337,9 @@ class SecureLockApp(tk.Tk):
     def _init_unlock_tab(self):
         lbl_step1 = tk.Label(
             self.tab_unlock,
-            text="1. লক করা ফাইল বা ফোল্ডার নির্বাচন করুন (Select Locked Vault / Folder):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="1. Select Locked Vault or Folder:",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step1.pack(anchor="w")
@@ -1062,8 +1352,8 @@ class SecureLockApp(tk.Tk):
             box,
             textvariable=self.unlock_target_var,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
             highlightbackground=BORDER_COLOR,
@@ -1075,11 +1365,11 @@ class SecureLockApp(tk.Tk):
             box,
             text="📂 Browse Locked File...",
             command=self._browse_locked_item,
-            bg=PRIMARY_COLOR,
-            fg=TEXT_WHITE,
-            activebackground=PRIMARY_HOVER,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=14,
             pady=5,
@@ -1088,26 +1378,44 @@ class SecureLockApp(tk.Tk):
         )
         btn_browse_slock.pack(side=tk.RIGHT)
 
+        btn_pick_vault = tk.Button(
+            box,
+            text="📋 View Locked Vaults",
+            command=self._switch_to_vaults_tab,
+            bg="#FEF3C7",
+            fg="#92400E",
+            activebackground="#FDE68A",
+            activeforeground="#92400E",
+            font=("Segoe UI Bold", 9),
+            relief=tk.FLAT,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            bd=1,
+            highlightbackground="#F59E0B",
+        )
+        btn_pick_vault.pack(side=tk.RIGHT, padx=(0, 6))
+
         pwd_header_row = tk.Frame(self.tab_unlock, bg=BG_CARD)
         pwd_header_row.pack(fill=tk.X, pady=(12, 4))
 
         lbl_step2 = tk.Label(
             pwd_header_row,
-            text="2. আনলক করার পাসওয়ার্ড লিখুন (Enter Password):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="2. Enter Password:",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_step2.pack(side=tk.LEFT)
 
         btn_forgot_pwd = tk.Button(
             pwd_header_row,
-            text="❓ পাসওয়ার্ড ভুলে গেছেন? (Forgot Password / Email OTP)",
+            text="❓ Forgot Password? (Email OTP / Recovery Key)",
             command=self._open_forgot_password_dialog,
             bg=BG_CARD,
-            fg=WARNING_COLOR,
+            fg=PRIMARY_COLOR,
             activebackground=BG_CARD,
-            activeforeground=TEXT_WHITE,
+            activeforeground=PRIMARY_HOVER,
             font=("Segoe UI Bold", 9, "underline"),
             relief=tk.FLAT,
             bd=0,
@@ -1120,9 +1428,9 @@ class SecureLockApp(tk.Tk):
 
         lbl_dest = tk.Label(
             self.tab_unlock,
-            text="3. আনলক করে কোথায় সেভ করবেন (Restore Destination - ঐচ্ছিক):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="3. Restore Destination (Optional):",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         )
         lbl_dest.pack(anchor="w")
@@ -1135,8 +1443,8 @@ class SecureLockApp(tk.Tk):
             dest_box,
             textvariable=self.unlock_dest_var,
             bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             relief=tk.FLAT,
             font=("Segoe UI", 10),
             highlightbackground=BORDER_COLOR,
@@ -1148,22 +1456,23 @@ class SecureLockApp(tk.Tk):
             dest_box,
             text="📁 Select Folder...",
             command=self._browse_destination_folder,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Semibold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=5,
             cursor="hand2",
             bd=1,
+            highlightbackground=BORDER_COLOR,
         )
         btn_browse_dest.pack(side=tk.RIGHT)
 
         hint_dest = tk.Label(
             self.tab_unlock,
-            text="   *খালি রাখলে লক করা ফাইলের পাশেই স্বয়ংক্রিয়ভাবে ফোল্ডারটি আনলক হবে।",
+            text="   *Leave blank to restore next to the locked container.",
             font=("Segoe UI", 8),
             fg=TEXT_MUTED,
             bg=BG_CARD,
@@ -1172,12 +1481,12 @@ class SecureLockApp(tk.Tk):
 
         self.btn_execute_unlock = tk.Button(
             self.tab_unlock,
-            text="🔓 ফোল্ডার আনলক করুন (Unlock & Restore Folder)",
+            text="🔓 Unlock & Restore Folder",
             command=self._start_unlock_thread,
-            bg=SUCCESS_COLOR,
-            fg=TEXT_WHITE,
-            activebackground="#16a34a",
-            activeforeground=TEXT_WHITE,
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI Bold", 11),
             relief=tk.FLAT,
             pady=10,
@@ -1191,9 +1500,9 @@ class SecureLockApp(tk.Tk):
 
         self.lbl_unlock_status = tk.Label(
             self.tab_unlock,
-            text="প্রস্তুত (Ready to unlock).",
+            text="Ready to unlock.",
             font=("Segoe UI", 9),
-            fg=TEXT_MUTED,
+            fg=TEXT_DARK,
             bg=BG_CARD,
         )
         self.lbl_unlock_status.pack(anchor="w")
@@ -1201,7 +1510,7 @@ class SecureLockApp(tk.Tk):
         self.last_restored_folder = None
         self.btn_open_restored = tk.Button(
             self.tab_unlock,
-            text="📂 আনলক করা ফোল্ডারটি এক্সপ্লোরারে খুলুন (Open in File Explorer)",
+            text="📂 Open Restored Folder in File Explorer",
             command=self._open_restored_in_explorer,
             bg=PRIMARY_COLOR,
             fg=TEXT_WHITE,
@@ -1214,38 +1523,67 @@ class SecureLockApp(tk.Tk):
             bd=0,
         )
 
+    def _switch_to_vaults_tab(self):
+        self.notebook.select(self.tab_vaults)
+        self.refresh_vaults_list()
+
     def _open_forgot_password_dialog(self):
         target = self.unlock_target_var.get().strip()
         if not target:
-            messagebox.showinfo("নোটিশ", "অনুগ্রহ করে প্রথমে লক করা ফাইল বা ফোল্ডারটি সিলেক্ট করুন!")
+            vaults = load_vaults()
+            for v in reversed(vaults):
+                lpath = v.get("locked_path", "")
+                if os.path.exists(lpath):
+                    target = lpath
+                    self.unlock_target_var.set(target)
+                    break
+
+        if not target:
+            messagebox.showinfo("Notice", "Please select a locked file or folder first, or choose one from the 'Locked Vaults' tab!")
             return
 
         if not os.path.exists(target):
-            messagebox.showerror("ত্রুটি", "লক করা ফাইল বা ফোল্ডারটি পাওয়া যায়নি!")
+            from core.quick_lock import LOCK_CLSID
+            clean = target.rstrip("\\/")
+            cand = f"{clean}.{LOCK_CLSID}"
+            if os.path.exists(cand):
+                target = cand
+                self.unlock_target_var.set(target)
+            else:
+                for v in load_vaults():
+                    if target.lower() in [v.get("name", "").lower(), v.get("original_path", "").lower()]:
+                        lpath = v.get("locked_path", "")
+                        if os.path.exists(lpath):
+                            target = lpath
+                            self.unlock_target_var.set(target)
+                            break
+
+        if not os.path.exists(target):
+            messagebox.showerror("Error", "The selected locked container was not found!\n\nTip: Open the 'Locked Vaults' tab to see all locked folders.")
             return
 
         def on_reset_or_unlock(new_pwd=None):
             if new_pwd:
                 self.unlock_pwd_entry.set(new_pwd)
-                self.lbl_unlock_status.config(text="✅ পাসওয়ার্ড রিসেট হয়েছে! এখন আনলক বাটনে ক্লিক করুন।", fg=SUCCESS_COLOR)
+                self.lbl_unlock_status.config(text="✅ Password reset successfully! Click Unlock to continue.", fg=SUCCESS_COLOR)
 
         ResetPasswordDialog(self, target, on_reset_or_unlock)
 
     def _browse_locked_item(self):
         file_selected = filedialog.askopenfilename(
-            title="লক করা ভল্ট ফাইল সিলেক্ট করুন (.slock)",
+            title="Select Locked Vault File (.slock)",
             filetypes=[("SecureLock Vaults", "*.slock"), ("All Files", "*.*")],
         )
         if file_selected:
             self.unlock_target_var.set(os.path.normpath(file_selected))
             return
 
-        folder_selected = filedialog.askdirectory(title="অথবা কুইক-লক করা ফোল্ডার সিলেক্ট করুন")
+        folder_selected = filedialog.askdirectory(title="Or Select Quick-Locked Folder")
         if folder_selected:
             self.unlock_target_var.set(os.path.normpath(folder_selected))
 
     def _browse_destination_folder(self):
-        folder = filedialog.askdirectory(title="যেখানে আনলক করতে চান সেই লোকেশন বাছাই করুন")
+        folder = filedialog.askdirectory(title="Select Restore Destination Directory")
         if folder:
             self.unlock_dest_var.set(os.path.normpath(folder))
 
@@ -1255,18 +1593,43 @@ class SecureLockApp(tk.Tk):
         dest = self.unlock_dest_var.get().strip() or None
 
         if not target:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে আনলক করার ফাইল বা ফোল্ডার নির্বাচন করুন!")
+            vaults = load_vaults()
+            for v in reversed(vaults):
+                lpath = v.get("locked_path", "")
+                if os.path.exists(lpath):
+                    target = lpath
+                    self.unlock_target_var.set(target)
+                    break
+
+        if not target:
+            messagebox.showerror("Error", "Please select a file or folder to unlock!\n\nTip: You can select directly from the 'Locked Vaults' tab.")
             return
 
         if not os.path.exists(target):
-            messagebox.showerror("ত্রুটি", "নির্বাচিত ফাইল বা ফোল্ডারটি পাওয়া যায়নি!")
+            from core.quick_lock import LOCK_CLSID
+            clean = target.rstrip("\\/")
+            cand = f"{clean}.{LOCK_CLSID}"
+            if os.path.exists(cand):
+                target = cand
+                self.unlock_target_var.set(target)
+            else:
+                for v in load_vaults():
+                    if target.lower() in [v.get("name", "").lower(), v.get("original_path", "").lower()]:
+                        lpath = v.get("locked_path", "")
+                        if os.path.exists(lpath):
+                            target = lpath
+                            self.unlock_target_var.set(target)
+                            break
+
+        if not os.path.exists(target):
+            messagebox.showerror("Error", "The selected file or folder was not found!\n\nTip: Go to 'Locked Vaults' tab to view all locked folders and click 'Unlock Selected'.")
             return
 
         if not pwd:
-            messagebox.showerror("ত্রুটি", "অনুগ্রহ করে পাসওয়ার্ড দিন! (পাসওয়ার্ড ভুলে গেলে 'Forgot Password?' বাটনে ক্লিক করুন)")
+            messagebox.showerror("Error", "Please enter password! (Or click 'Forgot Password?' to recover)")
             return
 
-        self.btn_execute_unlock.config(state=tk.DISABLED, text="আনলক করা হচ্ছে (Decrypting...)...")
+        self.btn_execute_unlock.config(state=tk.DISABLED, text="Decrypting & Restoring...")
         self.unlock_progress["value"] = 0
         self.btn_open_restored.pack_forget()
 
@@ -1292,17 +1655,17 @@ class SecureLockApp(tk.Tk):
                     progress_callback=update_cb,
                 )
             else:
-                self.after(0, lambda: self._update_unlock_ui(50, "Windows পারমিশন ও এট্রিবিউট রিস্টোর করা হচ্ছে..."))
+                self.after(0, lambda: self._update_unlock_ui(50, "Restoring Windows permissions & attributes..."))
                 restored_path = quick_unlock_folder(target, password=pwd)
-                self.after(0, lambda: self._update_unlock_ui(100, "ফোল্ডার সফলভাবে আনলক হয়েছে!"))
+                self.after(0, lambda: self._update_unlock_ui(100, "Folder unlocked successfully!"))
 
             remove_vault_by_path(target)
             self.after(0, lambda: self._on_unlock_success(restored_path))
 
         except (InvalidPasswordError, InvalidRecoveryKeyError):
-            self.after(0, lambda: self._on_unlock_error("ভুল পাসওয়ার্ড!\nপাসওয়ার্ড ভুলে গেলে 'Forgot Password?' বাটনে ক্লিক করে ইমেইল OTP দিয়ে রিসেট করুন।"))
+            self.after(0, lambda: self._on_unlock_error("Invalid password!\nIf you forgot your password, click 'Forgot Password?' to reset via Email OTP or Recovery Key."))
         except InvalidVaultFileError as ve:
-            self.after(0, lambda: self._on_unlock_error(f"ভল্ট ফাইলটি ক্ষতিগ্রস্ত বা সঠিক ফরম্যাটে নেই: {ve}"))
+            self.after(0, lambda: self._on_unlock_error(f"The vault file is corrupted or in an unrecognized format: {ve}"))
         except Exception as e:
             self.after(0, lambda: self._on_unlock_error(str(e)))
 
@@ -1311,8 +1674,8 @@ class SecureLockApp(tk.Tk):
         self.lbl_unlock_status.config(text=msg, fg=TEXT_WHITE)
 
     def _on_unlock_success(self, restored_path):
-        self.btn_execute_unlock.config(state=tk.NORMAL, text="🔓 ফোল্ডার আনলক করুন (Unlock & Restore Folder)")
-        self.lbl_unlock_status.config(text=f"✅ সফলভাবে আনলক হয়েছে: {restored_path}", fg=SUCCESS_COLOR)
+        self.btn_execute_unlock.config(state=tk.NORMAL, text="🔓 Unlock & Restore Folder")
+        self.lbl_unlock_status.config(text=f"✅ Successfully unlocked: {restored_path}", fg=SUCCESS_COLOR)
 
         self.last_restored_folder = restored_path
         self.btn_open_restored.pack(fill=tk.X, pady=(8, 0))
@@ -1322,14 +1685,14 @@ class SecureLockApp(tk.Tk):
         self.refresh_vaults_list()
 
         messagebox.showinfo(
-            "আনলক সফল",
-            f"আপনার ফোল্ডার সফলভাবে আনলক ও রিস্টোর করা হয়েছে!\n\nলোকেশন: {restored_path}",
+            "Unlock Successful",
+            f"Your folder has been successfully unlocked and restored!\n\nLocation: {restored_path}",
         )
 
     def _on_unlock_error(self, err_msg):
-        self.btn_execute_unlock.config(state=tk.NORMAL, text="🔓 ফোল্ডার আনলক করুন (Unlock & Restore Folder)")
-        self.lbl_unlock_status.config(text=f"❌ ত্রুটি: {err_msg}", fg=DANGER_COLOR)
-        messagebox.showerror("আনলক ব্যর্থ হয়েছে", err_msg)
+        self.btn_execute_unlock.config(state=tk.NORMAL, text="🔓 Unlock & Restore Folder")
+        self.lbl_unlock_status.config(text=f"❌ Error: {err_msg}", fg=DANGER_COLOR)
+        messagebox.showerror("Unlock Failed", err_msg)
 
     def _open_restored_in_explorer(self):
         if self.last_restored_folder and os.path.exists(self.last_restored_folder):
@@ -1344,9 +1707,9 @@ class SecureLockApp(tk.Tk):
 
         tk.Label(
             top_bar,
-            text="বর্তমানে লক করা ফোল্ডারের তালিকা (Currently Locked Folders):",
-            font=("Segoe UI Semibold", 10),
-            fg=TEXT_WHITE,
+            text="Currently Locked Folders & Vaults:",
+            font=("Segoe UI Bold", 10),
+            fg=TEXT_BLACK,
             bg=BG_CARD,
         ).pack(side=tk.LEFT)
 
@@ -1354,25 +1717,27 @@ class SecureLockApp(tk.Tk):
             top_bar,
             text="🔄 Refresh",
             command=self.refresh_vaults_list,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            font=("Segoe UI", 9),
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
-            padx=10,
-            pady=3,
+            padx=12,
+            pady=4,
             cursor="hand2",
-            bd=1,
+            bd=0,
         )
         btn_refresh.pack(side=tk.RIGHT)
 
         columns = ("name", "type", "date", "status", "email", "path")
         self.tree = ttk.Treeview(self.tab_vaults, columns=columns, show="headings", height=12)
-        self.tree.heading("name", text="ফোল্ডারের নাম")
-        self.tree.heading("type", text="লক মোড")
-        self.tree.heading("date", text="লক করার সময়")
-        self.tree.heading("status", text="স্ট্যাটাস")
-        self.tree.heading("email", text="রিকভারি ইমেইল")
-        self.tree.heading("path", text="লক করা ফাইলের অবস্থান")
+        self.tree.heading("name", text="Folder Name")
+        self.tree.heading("type", text="Lock Mode")
+        self.tree.heading("date", text="Date Locked")
+        self.tree.heading("status", text="Status")
+        self.tree.heading("email", text="Recovery Email")
+        self.tree.heading("path", text="Locked File Location")
 
         self.tree.column("name", width=130, anchor="w")
         self.tree.column("type", width=80, anchor="center")
@@ -1388,13 +1753,13 @@ class SecureLockApp(tk.Tk):
 
         btn_unlock_sel = tk.Button(
             action_bar,
-            text="🔓 আনলক করুন (Unlock Selected)",
+            text="🔓 Unlock Selected",
             command=self._action_unlock_selected,
-            bg=SUCCESS_COLOR,
+            bg=PRIMARY_COLOR,
             fg=TEXT_WHITE,
-            activebackground="#16a34a",
+            activebackground=PRIMARY_HOVER,
             activeforeground=TEXT_WHITE,
-            font=("Segoe UI Semibold", 9),
+            font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
             padx=14,
             pady=6,
@@ -1405,33 +1770,36 @@ class SecureLockApp(tk.Tk):
 
         btn_forgot_sel = tk.Button(
             action_bar,
-            text="📧 ইমেইল OTP রিসেট (Forgot Password)",
+            text="📧 Email OTP Reset",
             command=self._action_forgot_selected,
-            bg=BG_INPUT,
-            fg=WARNING_COLOR,
-            activebackground=BORDER_COLOR,
-            activeforeground=TEXT_WHITE,
+            bg=YELLOW_BTN,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_BTN_HOVER,
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
+            relief=tk.FLAT,
+            padx=12,
+            pady=6,
+            cursor="hand2",
+            bd=0,
+        )
+        btn_forgot_sel.pack(side=tk.LEFT, padx=(0, 10))
+
+        btn_show_in_dir = tk.Button(
+            action_bar,
+            text="📁 Show in Explorer",
+            command=self._action_show_in_explorer,
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            activebackground="#F3F4F6",
+            activeforeground=TEXT_BLACK,
             font=("Segoe UI Semibold", 9),
             relief=tk.FLAT,
             padx=12,
             pady=6,
             cursor="hand2",
             bd=1,
-        )
-        btn_forgot_sel.pack(side=tk.LEFT, padx=(0, 10))
-
-        btn_show_in_dir = tk.Button(
-            action_bar,
-            text="📁 ফোল্ডারে প্রদর্শন করুন (Show in Explorer)",
-            command=self._action_show_in_explorer,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            font=("Segoe UI", 9),
-            relief=tk.FLAT,
-            padx=12,
-            pady=6,
-            cursor="hand2",
-            bd=1,
+            highlightbackground=BORDER_COLOR,
         )
         btn_show_in_dir.pack(side=tk.LEFT)
 
@@ -1442,8 +1810,8 @@ class SecureLockApp(tk.Tk):
         vaults = load_vaults()
         for v in vaults:
             lock_type_label = "AES-256" if v.get("type") == "aes256" else "Quick Lock"
-            exists_label = "সক্রিয়" if v.get("exists") else "পাওয়া যায়নি"
-            email_display = mask_email(v.get("recovery_email", "")) if v.get("recovery_email") else "দেওয়া হয়নি"
+            exists_label = "Active" if v.get("exists") else "Missing"
+            email_display = mask_email(v.get("recovery_email", "")) if v.get("recovery_email") else "None"
             self.tree.insert(
                 "",
                 tk.END,
@@ -1460,7 +1828,7 @@ class SecureLockApp(tk.Tk):
     def _action_unlock_selected(self):
         selected = self.tree.selection()
         if not selected:
-            messagebox.showinfo("বাছাই করুন", "তালিকা থেকে একটি লক করা ফোল্ডার নির্বাচন করুন!")
+            messagebox.showinfo("Select Vault", "Please select a locked folder from the list!")
             return
 
         values = self.tree.item(selected[0], "values")
@@ -1472,7 +1840,7 @@ class SecureLockApp(tk.Tk):
     def _action_forgot_selected(self):
         selected = self.tree.selection()
         if not selected:
-            messagebox.showinfo("বাছাই করুন", "তালিকা থেকে একটি লক করা ফোল্ডার নির্বাচন করুন!")
+            messagebox.showinfo("Select Vault", "Please select a locked folder from the list!")
             return
 
         values = self.tree.item(selected[0], "values")
@@ -1483,7 +1851,7 @@ class SecureLockApp(tk.Tk):
     def _action_show_in_explorer(self):
         selected = self.tree.selection()
         if not selected:
-            messagebox.showinfo("বাছাই করুন", "তালিকা থেকে একটি লক করা ফোল্ডার নির্বাচন করুন!")
+            messagebox.showinfo("Select Vault", "Please select a locked folder from the list!")
             return
 
         values = self.tree.item(selected[0], "values")
@@ -1492,7 +1860,7 @@ class SecureLockApp(tk.Tk):
             folder_dir = os.path.dirname(locked_path)
             subprocess.run(["explorer", folder_dir])
         else:
-            messagebox.showwarning("সতর্কতা", "ফাইলটি তার আগের অবস্থানে পাওয়া যায়নি!")
+            messagebox.showwarning("Warning", "The file could not be found at its recorded location!")
 
     # =========================================================================
     # TAB 4: HELP & TIPS
@@ -1500,9 +1868,9 @@ class SecureLockApp(tk.Tk):
     def _init_help_tab(self):
         help_text = tk.Text(
             self.tab_help,
-            bg=BG_INPUT,
-            fg=TEXT_WHITE,
-            insertbackground=TEXT_WHITE,
+            bg="#FFFFFF",
+            fg=TEXT_BLACK,
+            insertbackground=TEXT_BLACK,
             font=("Segoe UI", 10),
             relief=tk.FLAT,
             padx=15,
@@ -1511,42 +1879,51 @@ class SecureLockApp(tk.Tk):
         )
         help_text.pack(fill=tk.BOTH, expand=True)
 
-        content = """🔰 SecureLock ইমেইল ওটিপি ও পাসওয়ার্ড রিসেট নির্দেশিকা:
+        content = """🔰 SecureLock - Security, Email OTP & Recovery Guide:
 
-1. ইমেইল ওটিপি (Email OTP Setup):
-   • সফটওয়্যারের ওপর থাকা "⚙️ Email Settings" বাটনে ক্লিক করে আপনার প্রেরক ইমেইল ও অ্যাপ পাসওয়ার্ড সেট করুন।
-   • ফোল্ডার লক করার সময় আপনার নিজস্ব ব্যক্তিগত ইমেইল দিন।
+1. Email OTP Configuration:
+   • Click the "⚙️ Email Settings" button at the top-right of the window.
+   • Configure your sender email (Gmail / Outlook) and 16-character App Password.
+   • When locking any folder, enter your personal email address in the Recovery Email field.
 
-2. পাসওয়ার্ড ভুলে গেলে ওটিপি পাওয়া ও রিসেট করার নিয়ম:
-   • 'Unlock Folder' ট্যাবে গিয়ে লক করা ফাইল সিলেক্ট করে "❓ পাসওয়ার্ড ভুলে গেছেন?" বাটনে ক্লিক করুন।
-   • "📩 ইমেইলে OTP পাঠান" বাটনে ক্লিক করুন। সাথে সাথে আপনার ইনবক্সে ৬ সংখ্যার ওটিপি কোড চলে যাবে।
-   • কোডটি ও আপনার নতুন পছন্দসই পাসওয়ার্ড লিখে 'Verify & Reset Password' বাটনে ক্লিক করলেই আপনার পাসওয়ার্ড পরিবর্তন হয়ে যাবে!
+2. How to Recover & Reset Forgotten Passwords:
+   • Go to the "Unlock Folder" tab, select your locked container (.slock file or folder).
+   • Click the "❓ Forgot Password? (Email OTP / Recovery Key)" button.
+   • Click "📩 Send 6-Digit OTP". SecureLock will instantly dispatch a secure verification code to your registered email.
+   • Enter the OTP code, type your desired new password, and click "Verify & Reset Password".
+   • Your password is updated in milliseconds using zero-re-encryption envelope security!
 
-3. ইন্টারনেট ছাড়া অফলাইন রিকভারি:
-   • ইন্টারনেট বা ইমেইল না থাকলে লক করার সময় দেওয়া ব্যাকআপ রিকভারি কোড দিয়েও সাথে সাথে পাসওয়ার্ড রিসেট করা যায়।
+3. Offline Recovery (No Internet Required):
+   • When locking a folder, SecureLock generates a unique Emergency Recovery Key (e.g. SLOCK-XXXX-XXXX-XXXX-XXXX).
+   • Store this key in a secure offline location (e.g. password manager or notebook).
+   • Even without internet or an email server, you can instantly reset your password or unlock directly using this key.
+
+4. AES-256 vs Quick Lock:
+   • AES-256 Envelope Encryption: Military-grade cryptographic protection. Files are encrypted with AES-256-GCM.
+   • Quick Lock: Instant Windows shell and permission hiding. Perfect for massive game folders, video libraries, or fast concealment.
 """
         help_text.insert(tk.END, content)
         help_text.config(state=tk.DISABLED)
 
     def _build_status_bar(self):
-        status_bar = tk.Frame(self, bg=BG_INPUT, height=26, padx=15)
+        status_bar = tk.Frame(self, bg="#F1F5F9", height=28, padx=15, highlightbackground=BORDER_COLOR, highlightthickness=1)
         status_bar.pack(fill=tk.X, side=tk.BOTTOM)
 
         lbl_engine = tk.Label(
             status_bar,
             text="🔒 Engine: AES-256-GCM Envelope Cipher | Email OTP & Dual-Slot Key Recovery",
-            font=("Segoe UI", 8),
+            font=("Segoe UI Semibold", 8),
             fg=TEXT_MUTED,
-            bg=BG_INPUT,
+            bg="#F1F5F9",
         )
         lbl_engine.pack(side=tk.LEFT, pady=4)
 
         lbl_version = tk.Label(
             status_bar,
-            text="SecureLock v3.0 (Email OTP Edition)",
-            font=("Segoe UI Semibold", 8),
-            fg=TEXT_MUTED,
-            bg=BG_INPUT,
+            text="SecureLock v3.0 (English Edition)",
+            font=("Segoe UI Bold", 8),
+            fg=PRIMARY_COLOR,
+            bg="#F1F5F9",
         )
         lbl_version.pack(side=tk.RIGHT, pady=4)
 
