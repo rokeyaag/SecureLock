@@ -45,7 +45,7 @@ class TestOTPManager(unittest.TestCase):
         # 6th attempt should be blocked due to rate limit
         valid, _, msg = verify_otp(vault_path, otp_code)
         self.assertFalse(valid)
-        self.assertIn("সীমা", msg)
+        self.assertIn("exceeded", msg.lower())
 
     def test_mask_email(self):
         self.assertEqual(mask_email("john@gmail.com"), "j**n@gmail.com")
