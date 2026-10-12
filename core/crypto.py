@@ -121,6 +121,10 @@ def encrypt_folder(
     if not os.path.isdir(folder_path):
         raise ValueError(f"Target is not a valid directory: {folder_path}")
 
+    drive, rest = os.path.splitdrive(folder_path)
+    if not rest.strip("\\/"):
+        raise ValueError("Cannot lock an entire drive root (e.g., C:\\ or D:\\). Please select a specific folder inside the drive.")
+
     folder_name = os.path.basename(folder_path.rstrip("\\/"))
     if not folder_name:
         folder_name = "SecuredFolder"
@@ -273,7 +277,19 @@ def encrypt_folder(
         if delete_original:
             if progress_callback:
                 progress_callback(98.0, "Securely removing unencrypted folder...")
-            shutil.rmtree(folder_path, ignore_errors=False)
+
+            def _handle_remove_readonly(func, path, excinfo):
+                import stat
+                try:
+                    os.chmod(path, stat.S_IWRITE)
+                    func(path)
+                except Exception:
+                    pass
+
+            try:
+                shutil.rmtree(folder_path, onexc=_handle_remove_readonly)
+            except TypeError:
+                shutil.rmtree(folder_path, onerror=_handle_remove_readonly)
 
         if progress_callback:
             progress_callback(100.0, "Folder successfully locked!")

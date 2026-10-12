@@ -947,27 +947,13 @@ class SecureLockApp(tk.Tk):
         )
         lbl_step2.pack(anchor="w", pady=(6, 2))
 
-        self.lock_mode_var = tk.StringVar(value="aes256")
+        self.lock_mode_var = tk.StringVar(value="quick_lock")
         mode_box = tk.Frame(self.tab_lock, bg=YELLOW_LIGHT, highlightbackground=BORDER_YELLOW, highlightthickness=1, padx=10, pady=5)
         mode_box.pack(fill=tk.X, pady=(0, 6))
 
-        rb_aes = tk.Radiobutton(
-            mode_box,
-            text="🛡️ AES-256 Envelope Encryption (Recommended - Military Grade)",
-            variable=self.lock_mode_var,
-            value="aes256",
-            bg=YELLOW_LIGHT,
-            fg=TEXT_BLACK,
-            activebackground=YELLOW_LIGHT,
-            activeforeground=TEXT_BLACK,
-            selectcolor="#FFFFFF",
-            font=("Segoe UI Semibold", 9),
-        )
-        rb_aes.pack(anchor="w")
-
         rb_quick = tk.Radiobutton(
             mode_box,
-            text="⚡ Instant Quick Lock (Fast Lock for Large Files/Games)",
+            text="⚡ Instant Quick Lock (Instant 1-Sec Lock — Recommended for All Folders & Large Files)",
             variable=self.lock_mode_var,
             value="quick_lock",
             bg=YELLOW_LIGHT,
@@ -977,7 +963,21 @@ class SecureLockApp(tk.Tk):
             selectcolor="#FFFFFF",
             font=("Segoe UI Semibold", 9),
         )
-        rb_quick.pack(anchor="w", pady=(2, 0))
+        rb_quick.pack(anchor="w")
+
+        rb_aes = tk.Radiobutton(
+            mode_box,
+            text="🛡️ AES-256 Envelope Encryption (High Security — Byte-by-byte archive, takes time on large folders)",
+            variable=self.lock_mode_var,
+            value="aes256",
+            bg=YELLOW_LIGHT,
+            fg=TEXT_BLACK,
+            activebackground=YELLOW_LIGHT,
+            activeforeground=TEXT_BLACK,
+            selectcolor="#FFFFFF",
+            font=("Segoe UI Semibold", 9),
+        )
+        rb_aes.pack(anchor="w", pady=(2, 0))
 
         # 3. Password Input
         lbl_step3 = tk.Label(
@@ -1117,9 +1117,22 @@ class SecureLockApp(tk.Tk):
         messagebox.showinfo("Copied", f"Recovery key copied to clipboard:\n{key}")
 
     def _browse_folder_to_lock(self):
+        old_cwd = os.getcwd()
         folder = filedialog.askdirectory(title="Select Folder to Lock")
+        try:
+            os.chdir(old_cwd)
+        except Exception:
+            pass
+
         if folder:
             norm_folder = os.path.normpath(folder)
+            drive, rest = os.path.splitdrive(norm_folder)
+            if not rest.strip("\\/"):
+                messagebox.showerror(
+                    "Invalid Selection",
+                    f"Cannot lock an entire drive root ({norm_folder}).\nPlease select a specific folder inside the drive."
+                )
+                return
             self.lock_folder_path_var.set(norm_folder)
             self._ensure_recovery_key_generated()
             threading.Thread(target=self._check_folder_size_hint, args=(norm_folder,), daemon=True).start()
@@ -1176,6 +1189,11 @@ class SecureLockApp(tk.Tk):
             messagebox.showerror("Error", "The selected folder was not found!")
             return
 
+        drive, rest = os.path.splitdrive(folder_path)
+        if not rest.strip("\\/"):
+            messagebox.showerror("Error", "Cannot lock an entire drive root (e.g. C:\\ or D:\\).\nPlease select a specific folder inside the drive.")
+            return
+
         if not pwd:
             messagebox.showerror("Error", "Please enter a password!")
             return
@@ -1184,61 +1202,18 @@ class SecureLockApp(tk.Tk):
             messagebox.showerror("Error", "Passwords do not match! Please retype.")
             return
 
-        # Check folder size and drive free space before locking
-        try:
-            drive = os.path.splitdrive(folder_path)[0] or folder_path
-            free_bytes = shutil.disk_usage(drive).free
-            free_gb = free_bytes / (1024 ** 3)
-
-            total_size = 0
-            for root, _, files in os.walk(folder_path):
-                for f in files:
-                    try:
-                        total_size += os.path.getsize(os.path.join(root, f))
-                    except OSError:
-                        pass
-            total_gb = total_size / (1024 ** 3)
-
-            if mode == "aes256":
-                if free_bytes < total_size:
-                    use_quick = messagebox.askyesno(
-                        "Insufficient Disk Space for AES-256",
-                        f"Target drive '{drive}' only has {free_gb:.1f} GB free space, but this folder is {total_gb:.1f} GB.\n\n"
-                        f"Creating an encrypted AES-256 container requires at least {total_gb:.1f} GB of free disk space.\n\n"
-                        f"Would you like to switch to '⚡ Instant Quick Lock' instead?\n"
-                        f"It locks this {total_gb:.1f} GB folder in under 1 second without needing any extra disk space!",
-                        default=messagebox.YES,
-                    )
-                    if use_quick:
-                        mode = "quick_lock"
-                        self.lock_mode_var.set("quick_lock")
-                    else:
-                        return
-                elif total_gb > 10.0:
-                    use_quick = messagebox.askyesno(
-                        "Large Folder Notice",
-                        f"This folder is very large ({total_gb:.1f} GB).\n\n"
-                        f"Full AES-256 byte-by-byte encryption will take 30 to 90 minutes.\n\n"
-                        f"Would you like to switch to '⚡ Instant Quick Lock' instead?\n"
-                        f"It locks in under 1 second without copying any data.",
-                        default=messagebox.YES,
-                    )
-                    if use_quick:
-                        mode = "quick_lock"
-                        self.lock_mode_var.set("quick_lock")
-        except Exception:
-            pass
-
         email_hint = f"\nRecovery Email: {rec_email}" if rec_email else ""
+        mode_desc = "Instant Quick Lock (1 sec)" if mode == "quick_lock" else "AES-256 Envelope Encryption"
         confirm = messagebox.askyesno(
             "Confirm Action",
-            f"Are you sure you want to lock this folder?\n\nFolder: {folder_path}\nSecurity Mode: {'AES-256 Envelope Encryption' if mode == 'aes256' else 'Instant Quick Lock'}{email_hint}\n\nEmergency Recovery Key: {rec_key}",
+            f"Are you sure you want to lock this folder?\n\nFolder: {folder_path}\nSecurity Mode: {mode_desc}{email_hint}\n\nEmergency Recovery Key: {rec_key}",
         )
         if not confirm:
             return
 
         self.btn_execute_lock.config(state=tk.DISABLED, text="Locking Folder (Processing...)...")
-        self.lock_progress["value"] = 0
+        self.lock_progress["value"] = 5
+        self.lbl_lock_status.config(text="Starting lock process...", fg=TEXT_WHITE)
 
         threading.Thread(
             target=self._lock_worker,
@@ -1249,15 +1224,29 @@ class SecureLockApp(tk.Tk):
     def _lock_worker(self, folder_path, pwd, mode, rec_key, rec_email):
         try:
             folder_name = os.path.basename(folder_path.rstrip("\\/"))
-            size_bytes = 0
-            for root, _, files in os.walk(folder_path):
-                for f in files:
-                    try:
-                        size_bytes += os.path.getsize(os.path.join(root, f))
-                    except OSError:
-                        pass
 
             if mode == "aes256":
+                # Check space in background thread before starting heavy encryption
+                try:
+                    drive = os.path.splitdrive(folder_path)[0] or folder_path
+                    free_bytes = shutil.disk_usage(drive).free
+                    total_size = 0
+                    for root, _, files in os.walk(folder_path):
+                        for f in files:
+                            try:
+                                total_size += os.path.getsize(os.path.join(root, f))
+                            except OSError:
+                                pass
+                    if free_bytes < total_size:
+                        raise ValueError(
+                            f"Not enough disk space on drive '{drive}'. "
+                            f"Needs at least {total_size/(1024**3):.1f} GB free, but only {free_bytes/(1024**3):.1f} GB available. "
+                            f"Please use 'Instant Quick Lock' instead."
+                        )
+                except Exception as e:
+                    if "Not enough disk space" in str(e):
+                        raise
+
                 def update_cb(pct, msg):
                     self.after(0, lambda: self._update_lock_ui(pct, msg))
 
@@ -1269,14 +1258,16 @@ class SecureLockApp(tk.Tk):
                     delete_original=True,
                     progress_callback=update_cb,
                 )
+                size_bytes = total_size
             else:
-                self.after(0, lambda: self._update_lock_ui(50, "Applying Windows CLSID & attribute protections..."))
+                self.after(0, lambda: self._update_lock_ui(50, "Securing folder with Windows CLSID & attribute protections..."))
                 locked_path, used_rec_key = quick_lock_folder(
                     folder_path=folder_path,
                     password=pwd,
                     recovery_key=rec_key,
                     recovery_email=rec_email,
                 )
+                size_bytes = 0
                 self.after(0, lambda: self._update_lock_ui(100, "Folder locked instantly!"))
 
             add_vault(
@@ -1329,7 +1320,18 @@ class SecureLockApp(tk.Tk):
     def _on_lock_error(self, err_msg):
         self.btn_execute_lock.config(state=tk.NORMAL, text="🔒 Lock Folder Now")
         self.lbl_lock_status.config(text=f"❌ Error: {err_msg}", fg=DANGER_COLOR)
-        messagebox.showerror("Lock Failed", f"An error occurred while locking the folder:\n{err_msg}")
+        if any(term in err_msg.lower() for term in ["used by another process", "access is denied", "in use", "winerror"]):
+            friendly_msg = (
+                f"Lock failed because the folder or a file inside it is currently OPEN.\n\n"
+                f"{err_msg}\n\n"
+                f"How to fix:\n"
+                f"1. Close Windows File Explorer if this folder is open.\n"
+                f"2. Close any files, media players, editors, or Command Prompt using this folder.\n"
+                f"3. Click 'Lock Folder Now' again."
+            )
+            messagebox.showerror("Folder In Use", friendly_msg)
+        else:
+            messagebox.showerror("Lock Failed", f"An error occurred while locking the folder:\n\n{err_msg}")
 
     # =========================================================================
     # TAB 2: UNLOCK FOLDER

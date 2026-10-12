@@ -76,8 +76,14 @@ def quick_lock_folder(
     if not os.path.isdir(folder_path):
         raise ValueError(f"Path is not a directory: {folder_path}")
 
+    drive, rest = os.path.splitdrive(folder_path)
+    if not rest.strip("\\/"):
+        raise ValueError("Cannot lock an entire drive root (e.g., C:\\ or D:\\). Please select a specific folder inside the drive.")
+
     folder_dir = os.path.dirname(folder_path)
-    folder_name = os.path.basename(folder_path)
+    folder_name = os.path.basename(folder_path.rstrip("\\/"))
+    if not folder_name:
+        raise ValueError("Invalid folder name.")
 
     pwd_hash, salt_pwd = _hash_secret(password)
 
@@ -119,7 +125,33 @@ def quick_lock_folder(
     if os.path.exists(locked_path):
         raise FileExistsError(f"Locked folder destination already exists: {locked_path}")
 
-    os.rename(folder_path, locked_path)
+    # Retry mechanism with handle garbage collection for Windows locks
+    import time
+    import gc
+    renamed = False
+    last_err = None
+    for attempt in range(5):
+        try:
+            gc.collect()
+            os.rename(folder_path, locked_path)
+            renamed = True
+            break
+        except (PermissionError, OSError) as e:
+            last_err = e
+            time.sleep(0.3)
+
+    if not renamed:
+        try:
+            if os.path.exists(meta_path):
+                _run_attrib(["-h", "-s", meta_path])
+                os.remove(meta_path)
+        except Exception:
+            pass
+        raise PermissionError(
+            f"Cannot lock folder '{folder_name}'. It or a file inside is currently open in Windows Explorer "
+            f"or another program. Please close any open explorer windows or applications using this folder and try again."
+        ) from last_err
+
     _run_attrib(["+h", "+s", locked_path])
 
     return locked_path, final_rec_key or ""
@@ -242,7 +274,27 @@ def quick_unlock_folder(
             counter += 1
         restored_path = f"{restored_path} ({counter})"
 
-    os.rename(locked_path, restored_path)
+    import time
+    import gc
+    unlocked = False
+    last_err = None
+    for attempt in range(5):
+        try:
+            gc.collect()
+            os.rename(locked_path, restored_path)
+            unlocked = True
+            break
+        except (PermissionError, OSError) as e:
+            last_err = e
+            time.sleep(0.3)
+
+    if not unlocked:
+        _run_attrib(["+h", "+s", locked_path])
+        raise PermissionError(
+            f"Cannot unlock folder '{orig_name}'. The locked folder is in use by Windows Explorer or another app. "
+            f"Please close any open explorer windows and try again."
+        ) from last_err
+
     _run_attrib(["-h", "-s", restored_path])
 
     return restored_path
