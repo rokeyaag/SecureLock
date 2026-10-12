@@ -43,6 +43,11 @@ def _run_attrib(args: list) -> bool:
             ctypes.windll.kernel32.SetFileAttributesW(target_path, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)
         else:
             ctypes.windll.kernel32.SetFileAttributesW(target_path, FILE_ATTRIBUTE_NORMAL)
+            import stat
+            try:
+                os.chmod(target_path, stat.S_IWRITE)
+            except Exception:
+                pass
         return True
     except Exception:
         try:
@@ -114,8 +119,34 @@ def quick_lock_folder(
     }
 
     meta_path = os.path.join(folder_path, METADATA_FILENAME)
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(meta, f)
+    if os.path.exists(meta_path):
+        _run_attrib(["-h", "-s", meta_path])
+        import stat
+        try:
+            os.chmod(meta_path, stat.S_IWRITE)
+        except Exception:
+            pass
+        try:
+            os.remove(meta_path)
+        except Exception:
+            pass
+
+    try:
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+    except PermissionError:
+        _run_attrib(["-h", "-s", meta_path])
+        import stat
+        try:
+            os.chmod(meta_path, stat.S_IWRITE)
+        except Exception:
+            pass
+        try:
+            os.remove(meta_path)
+        except Exception:
+            pass
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(meta, f)
 
     _run_attrib(["+h", "+s", meta_path])
 
