@@ -1140,12 +1140,17 @@ class SecureLockApp(tk.Tk):
     def _check_folder_size_hint(self, folder):
         try:
             total_size = 0
+            import time
+            start_t = time.time()
             for root, _, files in os.walk(folder):
                 for f in files:
                     try:
                         total_size += os.path.getsize(os.path.join(root, f))
                     except OSError:
                         pass
+                # Timeout after 1.5 seconds so huge folders never hold locks or freeze disk
+                if time.time() - start_t > 1.5:
+                    break
             total_gb = total_size / (1024 ** 3)
             drive = os.path.splitdrive(folder)[0] or folder
             free_gb = shutil.disk_usage(drive).free / (1024 ** 3)

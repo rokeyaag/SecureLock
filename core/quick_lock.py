@@ -64,6 +64,35 @@ def _run_attrib(args: list) -> bool:
             return False
 
 
+def _close_explorer_for_path(target_path: str):
+    """Automatically closes any Windows File Explorer windows that are viewing target_path."""
+    if sys.platform != "win32" or not target_path:
+        return
+    try:
+        norm = os.path.abspath(target_path).replace("\\", "/").rstrip("/").lower()
+        target_url = f"file:///{norm}"
+        ps_script = (
+            "$shell = New-Object -ComObject Shell.Application\n"
+            f"$target = '{target_url}'\n"
+            "foreach ($win in $shell.Windows()) {\n"
+            "    try {\n"
+            "        $loc = $win.LocationURL.TrimEnd('/')\n"
+            "        if ($loc -and $loc.ToLower() -eq $target) {\n"
+            "            $win.Quit()\n"
+            "        }\n"
+            "    } catch {}\n"
+            "}\n"
+        )
+        subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+            capture_output=True,
+            timeout=2.0,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+        )
+    except Exception:
+        pass
+
+
 def quick_lock_folder(
     folder_path: str,
     password: str,
@@ -156,6 +185,9 @@ def quick_lock_folder(
     if os.path.exists(locked_path):
         raise FileExistsError(f"Locked folder destination already exists: {locked_path}")
 
+    # Automatically close any Windows Explorer windows viewing this folder to release handles
+    _close_explorer_for_path(folder_path)
+
     # Retry mechanism with handle garbage collection for Windows locks
     import time
     import gc
@@ -169,6 +201,8 @@ def quick_lock_folder(
             break
         except (PermissionError, OSError) as e:
             last_err = e
+            # Close explorer window on retry in case user just browsed it
+            _close_explorer_for_path(folder_path)
             time.sleep(0.3)
 
     if not renamed:
@@ -305,6 +339,8 @@ def quick_unlock_folder(
             counter += 1
         restored_path = f"{restored_path} ({counter})"
 
+    _close_explorer_for_path(locked_path)
+
     import time
     import gc
     unlocked = False
@@ -317,6 +353,7 @@ def quick_unlock_folder(
             break
         except (PermissionError, OSError) as e:
             last_err = e
+            _close_explorer_for_path(locked_path)
             time.sleep(0.3)
 
     if not unlocked:
