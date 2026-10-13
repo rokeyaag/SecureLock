@@ -64,29 +64,40 @@ def _run_attrib(args: list) -> bool:
             return False
 
 
-def _close_explorer_for_path(target_path: str):
-    """Automatically closes any Windows File Explorer windows that are viewing target_path."""
+def _close_explorer_for_path(target_path: str, close_all: bool = False):
+    """Automatically closes any Windows File Explorer windows that are viewing target_path or Home tab."""
     if sys.platform != "win32" or not target_path:
         return
     try:
         norm = os.path.abspath(target_path).replace("\\", "/").rstrip("/").lower()
         target_url = f"file:///{norm}"
-        ps_script = (
-            "$shell = New-Object -ComObject Shell.Application\n"
-            f"$target = '{target_url}'\n"
-            "foreach ($win in $shell.Windows()) {\n"
-            "    try {\n"
-            "        $loc = $win.LocationURL.TrimEnd('/')\n"
-            "        if ($loc -and $loc.ToLower() -eq $target) {\n"
-            "            $win.Quit()\n"
-            "        }\n"
-            "    } catch {}\n"
-            "}\n"
-        )
+        base_name = os.path.basename(norm).lower()
+        if close_all:
+            ps_script = (
+                "$shell = New-Object -ComObject Shell.Application\n"
+                "foreach ($win in $shell.Windows()) {\n"
+                "    try { $win.Quit() } catch {}\n"
+                "}\n"
+            )
+        else:
+            ps_script = (
+                "$shell = New-Object -ComObject Shell.Application\n"
+                f"$target = '{target_url}'\n"
+                f"$baseName = '{base_name}'\n"
+                "foreach ($win in $shell.Windows()) {\n"
+                "    try {\n"
+                "        $loc = if ($win.LocationURL) { $win.LocationURL.TrimEnd('/').ToLower() } else { '' }\n"
+                "        $name = if ($win.LocationName) { $win.LocationName.ToLower() } else { '' }\n"
+                "        if ($loc.Contains($baseName) -or $loc -eq $target -or $name -eq $baseName -or $name -eq 'home' -or $loc -eq '') {\n"
+                "            $win.Quit()\n"
+                "        }\n"
+                "    } catch {}\n"
+                "}\n"
+            )
         subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
             capture_output=True,
-            timeout=2.0,
+            timeout=2.5,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
         )
     except Exception:
@@ -102,22 +113,23 @@ def quick_lock_folder(
     security_answer: Optional[str] = None,
 ) -> Tuple[str, str]:
     """
-    Instantly locks a folder on Windows.
+    Instantly locks a folder or file on Windows.
     Appends CLSID mask and applies system+hidden attributes.
     Returns (locked_path, recovery_key_used).
     """
-    folder_path = os.path.abspath(folder_path)
-    if not os.path.isdir(folder_path):
-        raise ValueError(f"Path is not a directory: {folder_path}")
+    target_path = os.path.abspath(folder_path)
+    if not os.path.exists(target_path):
+        raise ValueError(f"Path does not exist: {target_path}")
 
-    drive, rest = os.path.splitdrive(folder_path)
+    drive, rest = os.path.splitdrive(target_path)
     if not rest.strip("\\/"):
-        raise ValueError("Cannot lock an entire drive root (e.g., C:\\ or D:\\). Please select a specific folder inside the drive.")
+        raise ValueError("Cannot lock an entire drive root (e.g., C:\\ or D:\\). Please select a specific folder or file inside the drive.")
 
-    folder_dir = os.path.dirname(folder_path)
-    folder_name = os.path.basename(folder_path.rstrip("\\/"))
+    is_file = os.path.isfile(target_path)
+    folder_dir = os.path.dirname(target_path)
+    folder_name = os.path.basename(target_path.rstrip("\\/"))
     if not folder_name:
-        raise ValueError("Invalid folder name.")
+        raise ValueError("Invalid name.")
 
     pwd_hash, salt_pwd = _hash_secret(password)
 
@@ -136,6 +148,7 @@ def quick_lock_folder(
     meta = {
         "version": 2,
         "type": "quick_lock",
+        "is_file": is_file,
         "original_name": folder_name,
         "password_hash": pwd_hash,
         "salt": salt_pwd,
@@ -147,7 +160,11 @@ def quick_lock_folder(
         "recovery_key_backup": final_rec_key or "",
     }
 
-    meta_path = os.path.join(folder_path, METADATA_FILENAME)
+    if is_file:
+        meta_path = os.path.join(folder_dir, f".{folder_name}.slock_meta.json")
+    else:
+        meta_path = os.path.join(target_path, METADATA_FILENAME)
+
     if os.path.exists(meta_path):
         _run_attrib(["-h", "-s", meta_path])
         import stat
@@ -183,27 +200,28 @@ def quick_lock_folder(
     locked_path = os.path.join(folder_dir, locked_name)
 
     if os.path.exists(locked_path):
-        raise FileExistsError(f"Locked folder destination already exists: {locked_path}")
+        raise FileExistsError(f"Locked destination already exists: {locked_path}")
 
-    # Automatically close any Windows Explorer windows viewing this folder to release handles
-    _close_explorer_for_path(folder_path)
+    # Automatically close any Windows Explorer windows viewing this folder or Home tab
+    _close_explorer_for_path(target_path, close_all=False)
 
     # Retry mechanism with handle garbage collection for Windows locks
     import time
     import gc
     renamed = False
     last_err = None
-    for attempt in range(5):
+    for attempt in range(6):
         try:
             gc.collect()
-            os.rename(folder_path, locked_path)
+            os.rename(target_path, locked_path)
             renamed = True
             break
         except (PermissionError, OSError) as e:
             last_err = e
-            # Close explorer window on retry in case user just browsed it
-            _close_explorer_for_path(folder_path)
-            time.sleep(0.3)
+            # On retry attempt >= 1, close all explorer windows to release any handles
+            if attempt >= 1:
+                _close_explorer_for_path(target_path, close_all=True)
+            time.sleep(0.4)
 
     if not renamed:
         try:
@@ -213,8 +231,8 @@ def quick_lock_folder(
         except Exception:
             pass
         raise PermissionError(
-            f"Cannot lock folder '{folder_name}'. It or a file inside is currently open in Windows Explorer "
-            f"or another program. Please close any open explorer windows or applications using this folder and try again."
+            f"Cannot lock '{folder_name}'. It or a file inside is currently open in Windows Explorer "
+            f"or another program. Please close any open explorer windows or applications using it and try again."
         ) from last_err
 
     _run_attrib(["+h", "+s", locked_path])
@@ -222,10 +240,25 @@ def quick_lock_folder(
     return locked_path, final_rec_key or ""
 
 
+def _get_meta_path(locked_path: str) -> str:
+    """Finds metadata path for either a locked folder or a locked file."""
+    # First check directory style
+    dir_meta = os.path.join(locked_path, METADATA_FILENAME)
+    if os.path.exists(dir_meta):
+        return dir_meta
+    # Check file style
+    folder_dir = os.path.dirname(locked_path)
+    clean_base = os.path.basename(locked_path).replace(f".{LOCK_CLSID}", "")
+    file_meta = os.path.join(folder_dir, f".{clean_base}.slock_meta.json")
+    if os.path.exists(file_meta):
+        return file_meta
+    return dir_meta
+
+
 def peek_quick_lock_meta(locked_path: str) -> Dict[str, Any]:
-    """Reads metadata from quick-locked folder."""
+    """Reads metadata from quick-locked folder or file."""
     _run_attrib(["-h", "-s", locked_path])
-    meta_path = os.path.join(locked_path, METADATA_FILENAME)
+    meta_path = _get_meta_path(locked_path)
     _run_attrib(["-h", "-s", meta_path])
 
     try:
@@ -238,10 +271,10 @@ def peek_quick_lock_meta(locked_path: str) -> Dict[str, Any]:
 
 
 def quick_reset_password(locked_path: str, recovery_secret: str, new_password: str) -> bool:
-    """Resets password of quick-locked folder using recovery key or security answer."""
+    """Resets password of quick-locked folder or file using recovery key or security answer."""
     locked_path = os.path.abspath(locked_path)
     _run_attrib(["-h", "-s", locked_path])
-    meta_path = os.path.join(locked_path, METADATA_FILENAME)
+    meta_path = _get_meta_path(locked_path)
     _run_attrib(["-h", "-s", meta_path])
 
     try:
@@ -252,7 +285,7 @@ def quick_reset_password(locked_path: str, recovery_secret: str, new_password: s
         rec_salt = meta.get("recovery_salt")
 
         if not rec_hash or not rec_salt:
-            raise ValueError("No recovery option configured for this folder.")
+            raise ValueError("No recovery option configured for this item.")
 
         from core.crypto import normalize_recovery_key
         matched = _verify_secret(normalize_recovery_key(recovery_secret), rec_hash, rec_salt)
@@ -281,21 +314,21 @@ def quick_unlock_folder(
     recovery_secret: Optional[str] = None
 ) -> str:
     """
-    Unlocks a quick-locked folder using password or recovery secret.
-    Returns restored original folder path.
+    Unlocks a quick-locked folder or file using password or recovery secret.
+    Returns restored original path.
     """
     locked_path = os.path.abspath(locked_path)
     if not os.path.exists(locked_path):
-        raise FileNotFoundError(f"Locked folder not found: {locked_path}")
+        raise FileNotFoundError(f"Locked item not found: {locked_path}")
 
     _run_attrib(["-h", "-s", locked_path])
 
-    meta_path = os.path.join(locked_path, METADATA_FILENAME)
+    meta_path = _get_meta_path(locked_path)
     _run_attrib(["-h", "-s", meta_path])
 
     if not os.path.exists(meta_path):
         _run_attrib(["+h", "+s", locked_path])
-        raise ValueError("Invalid locked folder: missing SecureLock metadata.")
+        raise ValueError("Invalid locked item: missing SecureLock metadata.")
 
     with open(meta_path, "r", encoding="utf-8") as f:
         meta = json.load(f)
@@ -335,17 +368,18 @@ def quick_unlock_folder(
 
     if os.path.exists(restored_path):
         counter = 1
-        while os.path.exists(f"{restored_path} ({counter})"):
+        base, ext = os.path.splitext(orig_name)
+        while os.path.exists(os.path.join(folder_dir, f"{base} ({counter}){ext}")):
             counter += 1
-        restored_path = f"{restored_path} ({counter})"
+        restored_path = os.path.join(folder_dir, f"{base} ({counter}){ext}")
 
-    _close_explorer_for_path(locked_path)
+    _close_explorer_for_path(locked_path, close_all=False)
 
     import time
     import gc
     unlocked = False
     last_err = None
-    for attempt in range(5):
+    for attempt in range(6):
         try:
             gc.collect()
             os.rename(locked_path, restored_path)
@@ -353,13 +387,14 @@ def quick_unlock_folder(
             break
         except (PermissionError, OSError) as e:
             last_err = e
-            _close_explorer_for_path(locked_path)
-            time.sleep(0.3)
+            if attempt >= 1:
+                _close_explorer_for_path(locked_path, close_all=True)
+            time.sleep(0.4)
 
     if not unlocked:
         _run_attrib(["+h", "+s", locked_path])
         raise PermissionError(
-            f"Cannot unlock folder '{orig_name}'. The locked folder is in use by Windows Explorer or another app. "
+            f"Cannot unlock '{orig_name}'. The locked item is in use by Windows Explorer or another app. "
             f"Please close any open explorer windows and try again."
         ) from last_err
 

@@ -886,7 +886,7 @@ class SecureLockApp(tk.Tk):
         # 1. Folder Selection
         lbl_step1 = tk.Label(
             self.tab_lock,
-            text="1. Select Folder to Lock:",
+            text="1. Select Folder or File to Lock:",
             font=("Segoe UI Bold", 10),
             fg=TEXT_BLACK,
             bg=BG_CARD,
@@ -911,8 +911,11 @@ class SecureLockApp(tk.Tk):
         self.entry_lock_path.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=6, padx=(0, 10))
         self.entry_lock_path.bind("<KeyRelease>", lambda e: self._on_lock_path_changed())
 
+        btn_box = tk.Frame(folder_box, bg=BG_CARD)
+        btn_box.pack(side=tk.RIGHT)
+
         btn_browse_lock = tk.Button(
-            folder_box,
+            btn_box,
             text="📁 Browse Folder...",
             command=self._browse_folder_to_lock,
             bg=YELLOW_BTN,
@@ -921,12 +924,29 @@ class SecureLockApp(tk.Tk):
             activeforeground=TEXT_BLACK,
             font=("Segoe UI Bold", 9),
             relief=tk.FLAT,
-            padx=14,
+            padx=10,
             pady=5,
             cursor="hand2",
             bd=0,
         )
-        btn_browse_lock.pack(side=tk.RIGHT)
+        btn_browse_lock.pack(side=tk.LEFT, padx=(0, 6))
+
+        btn_browse_file = tk.Button(
+            btn_box,
+            text="📄 Browse File...",
+            command=self._browse_file_to_lock,
+            bg="#E5E7EB",
+            fg=TEXT_BLACK,
+            activebackground="#D1D5DB",
+            activeforeground=TEXT_BLACK,
+            font=("Segoe UI Bold", 9),
+            relief=tk.FLAT,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            bd=0,
+        )
+        btn_browse_file.pack(side=tk.LEFT)
 
         self.lbl_folder_size_hint = tk.Label(
             self.tab_lock,
@@ -1137,12 +1157,37 @@ class SecureLockApp(tk.Tk):
             self._ensure_recovery_key_generated()
             threading.Thread(target=self._check_folder_size_hint, args=(norm_folder,), daemon=True).start()
 
-    def _check_folder_size_hint(self, folder):
+    def _browse_file_to_lock(self):
+        old_cwd = os.getcwd()
+        file_path = filedialog.askopenfilename(title="Select File to Lock")
         try:
+            os.chdir(old_cwd)
+        except Exception:
+            pass
+
+        if file_path:
+            norm_file = os.path.normpath(file_path)
+            self.lock_folder_path_var.set(norm_file)
+            self._ensure_recovery_key_generated()
+            threading.Thread(target=self._check_folder_size_hint, args=(norm_file,), daemon=True).start()
+
+    def _check_folder_size_hint(self, path):
+        try:
+            if os.path.isfile(path):
+                total_size = os.path.getsize(path)
+                total_mb = total_size / (1024 ** 2)
+                drive = os.path.splitdrive(path)[0] or path
+                free_gb = shutil.disk_usage(drive).free / (1024 ** 3)
+                self.after(0, lambda: self.lbl_folder_size_hint.config(
+                    text=f"📄 File size: {total_mb:.2f} MB | Free drive space: {free_gb:.1f} GB",
+                    fg=TEXT_MUTED
+                ))
+                return
+
             total_size = 0
             import time
             start_t = time.time()
-            for root, _, files in os.walk(folder):
+            for root, _, files in os.walk(path):
                 for f in files:
                     try:
                         total_size += os.path.getsize(os.path.join(root, f))
@@ -1152,7 +1197,7 @@ class SecureLockApp(tk.Tk):
                 if time.time() - start_t > 1.5:
                     break
             total_gb = total_size / (1024 ** 3)
-            drive = os.path.splitdrive(folder)[0] or folder
+            drive = os.path.splitdrive(path)[0] or path
             free_gb = shutil.disk_usage(drive).free / (1024 ** 3)
 
             if total_gb >= 2.0:
@@ -1187,16 +1232,16 @@ class SecureLockApp(tk.Tk):
         rec_key = self._ensure_recovery_key_generated()
 
         if not folder_path:
-            messagebox.showerror("Error", "Please select a folder to lock!")
+            messagebox.showerror("Error", "Please select a folder or file to lock!")
             return
 
-        if not os.path.isdir(folder_path):
-            messagebox.showerror("Error", "The selected folder was not found!")
+        if not os.path.exists(folder_path):
+            messagebox.showerror("Error", "The selected folder or file was not found!")
             return
 
         drive, rest = os.path.splitdrive(folder_path)
         if not rest.strip("\\/"):
-            messagebox.showerror("Error", "Cannot lock an entire drive root (e.g. C:\\ or D:\\).\nPlease select a specific folder inside the drive.")
+            messagebox.showerror("Error", "Cannot lock an entire drive root (e.g. C:\\ or D:\\).\nPlease select a specific folder or file inside the drive.")
             return
 
         if not pwd:
@@ -1207,16 +1252,18 @@ class SecureLockApp(tk.Tk):
             messagebox.showerror("Error", "Passwords do not match! Please retype.")
             return
 
+        is_file = os.path.isfile(folder_path)
+        type_str = "file" if is_file else "folder"
         email_hint = f"\nRecovery Email: {rec_email}" if rec_email else ""
         mode_desc = "Instant Quick Lock (1 sec)" if mode == "quick_lock" else "AES-256 Envelope Encryption"
         confirm = messagebox.askyesno(
             "Confirm Action",
-            f"Are you sure you want to lock this folder?\n\nFolder: {folder_path}\nSecurity Mode: {mode_desc}{email_hint}\n\nEmergency Recovery Key: {rec_key}",
+            f"Are you sure you want to lock this {type_str}?\n\nLocation: {folder_path}\nSecurity Mode: {mode_desc}{email_hint}\n\nEmergency Recovery Key: {rec_key}",
         )
         if not confirm:
             return
 
-        self.btn_execute_lock.config(state=tk.DISABLED, text="Locking Folder (Processing...)...")
+        self.btn_execute_lock.config(state=tk.DISABLED, text=f"Locking {type_str.title()} (Processing...)...")
         self.lock_progress["value"] = 5
         self.lbl_lock_status.config(text="Starting lock process...", fg=TEXT_WHITE)
 
@@ -1229,6 +1276,8 @@ class SecureLockApp(tk.Tk):
     def _lock_worker(self, folder_path, pwd, mode, rec_key, rec_email):
         try:
             folder_name = os.path.basename(folder_path.rstrip("\\/"))
+            is_file = os.path.isfile(folder_path)
+            type_str = "file" if is_file else "folder"
 
             if mode == "aes256":
                 # Check space in background thread before starting heavy encryption
@@ -1236,12 +1285,15 @@ class SecureLockApp(tk.Tk):
                     drive = os.path.splitdrive(folder_path)[0] or folder_path
                     free_bytes = shutil.disk_usage(drive).free
                     total_size = 0
-                    for root, _, files in os.walk(folder_path):
-                        for f in files:
-                            try:
-                                total_size += os.path.getsize(os.path.join(root, f))
-                            except OSError:
-                                pass
+                    if is_file:
+                        total_size = os.path.getsize(folder_path)
+                    else:
+                        for root, _, files in os.walk(folder_path):
+                            for f in files:
+                                try:
+                                    total_size += os.path.getsize(os.path.join(root, f))
+                                except OSError:
+                                    pass
                     if free_bytes < total_size:
                         raise ValueError(
                             f"Not enough disk space on drive '{drive}'. "
@@ -1265,15 +1317,15 @@ class SecureLockApp(tk.Tk):
                 )
                 size_bytes = total_size
             else:
-                self.after(0, lambda: self._update_lock_ui(50, "Securing folder with Windows CLSID & attribute protections..."))
+                self.after(0, lambda: self._update_lock_ui(50, f"Securing {type_str} with Windows protection..."))
                 locked_path, used_rec_key = quick_lock_folder(
                     folder_path=folder_path,
                     password=pwd,
                     recovery_key=rec_key,
                     recovery_email=rec_email,
                 )
-                size_bytes = 0
-                self.after(0, lambda: self._update_lock_ui(100, "Folder locked instantly!"))
+                size_bytes = os.path.getsize(locked_path) if os.path.isfile(locked_path) else 0
+                self.after(0, lambda: self._update_lock_ui(100, f"{type_str.title()} locked instantly!"))
 
             add_vault(
                 name=folder_name,

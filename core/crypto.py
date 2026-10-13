@@ -70,20 +70,28 @@ def derive_key(password: str, salt: bytes) -> bytes:
 
 
 def _zip_directory(source_dir: str, zip_path: str, progress_callback: Optional[Callable[[float, str], None]] = None) -> int:
-    """Compress source_dir into zip_path, returning total uncompressed bytes."""
+    """Compress source_dir into zip_path, returning total uncompressed bytes. Supports both directories and single files."""
     file_list = []
     total_uncompressed_bytes = 0
 
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            full_path = os.path.join(root, file)
-            rel_path = os.path.relpath(full_path, source_dir)
-            try:
-                size = os.path.getsize(full_path)
-            except OSError:
-                size = 0
-            file_list.append((full_path, rel_path, size))
-            total_uncompressed_bytes += size
+    if os.path.isfile(source_dir):
+        try:
+            size = os.path.getsize(source_dir)
+        except OSError:
+            size = 0
+        file_list.append((source_dir, os.path.basename(source_dir), size))
+        total_uncompressed_bytes += size
+    else:
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, source_dir)
+                try:
+                    size = os.path.getsize(full_path)
+                except OSError:
+                    size = 0
+                file_list.append((full_path, rel_path, size))
+                total_uncompressed_bytes += size
 
     total_files = len(file_list)
     processed_files = 0
@@ -114,20 +122,20 @@ def encrypt_folder(
     progress_callback: Optional[Callable[[float, str], None]] = None,
 ) -> Tuple[str, str]:
     """
-    Encrypts a folder into a .slock AES-256-GCM vault container using envelope encryption.
+    Encrypts a folder or file into a .slock AES-256-GCM vault container using envelope encryption.
     Returns (vault_path, recovery_key_used).
     """
     folder_path = os.path.abspath(folder_path)
-    if not os.path.isdir(folder_path):
-        raise ValueError(f"Target is not a valid directory: {folder_path}")
+    if not os.path.exists(folder_path):
+        raise ValueError(f"Target does not exist: {folder_path}")
 
     drive, rest = os.path.splitdrive(folder_path)
     if not rest.strip("\\/"):
-        raise ValueError("Cannot lock an entire drive root (e.g., C:\\ or D:\\). Please select a specific folder inside the drive.")
+        raise ValueError("Cannot lock an entire drive root (e.g., C:\\ or D:\\). Please select a specific folder or file inside the drive.")
 
     folder_name = os.path.basename(folder_path.rstrip("\\/"))
     if not folder_name:
-        folder_name = "SecuredFolder"
+        folder_name = "SecuredItem"
 
     if output_vault_path is None:
         parent_dir = os.path.dirname(folder_path)
@@ -276,7 +284,7 @@ def encrypt_folder(
 
         if delete_original:
             if progress_callback:
-                progress_callback(98.0, "Securely removing unencrypted folder...")
+                progress_callback(98.0, "Securely removing unencrypted original...")
 
             def _handle_remove_readonly(func, path, excinfo):
                 import stat
@@ -286,13 +294,19 @@ def encrypt_folder(
                 except Exception:
                     pass
 
-            try:
-                shutil.rmtree(folder_path, onexc=_handle_remove_readonly)
-            except TypeError:
-                shutil.rmtree(folder_path, onerror=_handle_remove_readonly)
+            if os.path.isfile(folder_path):
+                try:
+                    os.remove(folder_path)
+                except Exception:
+                    pass
+            else:
+                try:
+                    shutil.rmtree(folder_path, onexc=_handle_remove_readonly)
+                except TypeError:
+                    shutil.rmtree(folder_path, onerror=_handle_remove_readonly)
 
         if progress_callback:
-            progress_callback(100.0, "Folder successfully locked!")
+            progress_callback(100.0, "Item successfully locked!")
 
         return output_vault_path, final_recovery_key or ""
 
@@ -535,17 +549,40 @@ def decrypt_folder(
         os.makedirs(target_folder, exist_ok=True)
 
         with zipfile.ZipFile(temp_zip, "r") as zipf:
-            total_members = len(zipf.infolist())
-            for idx, member in enumerate(zipf.infolist()):
-                target_path = os.path.abspath(os.path.join(target_folder, member.filename))
-                if not target_path.startswith(os.path.abspath(target_folder)):
-                    raise CryptoError(f"Dangerous path traversal detected in archive: {member.filename}")
+            members = zipf.infolist()
+            # If the archive consists of a single file matching orig_folder_name, extract as file
+            if len(members) == 1 and members[0].filename == orig_folder_name:
+                restored_file = os.path.join(destination_dir, orig_folder_name)
+                if os.path.exists(restored_file):
+                    counter = 1
+                    base, ext = os.path.splitext(orig_folder_name)
+                    while os.path.exists(os.path.join(destination_dir, f"{base} ({counter}){ext}")):
+                        counter += 1
+                    restored_file = os.path.join(destination_dir, f"{base} ({counter}){ext}")
+                with zipf.open(members[0]) as source, open(restored_file, "wb") as target:
+                    shutil.copyfileobj(source, target)
+                target_folder = restored_file
+            else:
+                target_folder = os.path.join(destination_dir, orig_folder_name)
+                if os.path.exists(target_folder):
+                    counter = 1
+                    while os.path.exists(f"{target_folder} ({counter})"):
+                        counter += 1
+                    target_folder = f"{target_folder} ({counter})"
 
-                zipf.extract(member, target_folder)
+                os.makedirs(target_folder, exist_ok=True)
 
-                if progress_callback and total_members > 0:
-                    pct = 75.0 + (idx / total_members) * 20.0
-                    progress_callback(pct, f"Extracting file {idx + 1}/{total_members}...")
+                total_members = len(members)
+                for idx, member in enumerate(members):
+                    target_path = os.path.abspath(os.path.join(target_folder, member.filename))
+                    if not target_path.startswith(os.path.abspath(target_folder)):
+                        raise CryptoError(f"Dangerous path traversal detected in archive: {member.filename}")
+
+                    zipf.extract(member, target_folder)
+
+                    if progress_callback and total_members > 0:
+                        pct = 75.0 + (idx / total_members) * 20.0
+                        progress_callback(pct, f"Extracting file {idx + 1}/{total_members}...")
 
         if delete_vault:
             if progress_callback:
@@ -556,7 +593,7 @@ def decrypt_folder(
                 pass
 
         if progress_callback:
-            progress_callback(100.0, "Folder successfully unlocked & restored!")
+            progress_callback(100.0, "Item successfully unlocked & restored!")
 
         return target_folder
 
