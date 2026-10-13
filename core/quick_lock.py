@@ -165,11 +165,18 @@ def quick_lock_folder(
     else:
         meta_path = os.path.join(target_path, METADATA_FILENAME)
 
+    # Bulletproof handling: force normal attributes before attempting write/delete
+    if sys.platform == "win32":
+        try:
+            ctypes.windll.kernel32.SetFileAttributesW(meta_path, 0x80)  # FILE_ATTRIBUTE_NORMAL
+        except Exception:
+            pass
+
     if os.path.exists(meta_path):
         _run_attrib(["-h", "-s", meta_path])
         import stat
         try:
-            os.chmod(meta_path, stat.S_IWRITE)
+            os.chmod(meta_path, stat.S_IWRITE | stat.S_IREAD)
         except Exception:
             pass
         try:
@@ -181,10 +188,15 @@ def quick_lock_folder(
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(meta, f)
     except PermissionError:
+        if sys.platform == "win32":
+            try:
+                ctypes.windll.kernel32.SetFileAttributesW(meta_path, 0x80)
+            except Exception:
+                pass
         _run_attrib(["-h", "-s", meta_path])
         import stat
         try:
-            os.chmod(meta_path, stat.S_IWRITE)
+            os.chmod(meta_path, stat.S_IWRITE | stat.S_IREAD)
         except Exception:
             pass
         try:
